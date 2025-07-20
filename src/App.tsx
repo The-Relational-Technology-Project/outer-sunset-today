@@ -9,6 +9,7 @@ import Submit from "./pages/Submit";
 import About from "./pages/About";
 import PlanMyDay from "./pages/PlanMyDay";
 import NotFound from "./pages/NotFound";
+import WorkInProgressBanner from "./components/WorkInProgressBanner";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <WorkInProgressBanner />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/calendar" element={<Calendar />} />
