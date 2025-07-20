@@ -8,8 +8,9 @@ export function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="text-2xl font-bold text-foreground">
-              Outer Sunset Today
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
+              <span className="hidden sm:inline">Outer Sunset Today</span>
+              <span className="sm:hidden">OS Today</span>
             </div>
           </Link>
           
@@ -28,11 +29,12 @@ export function Header() {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <Button variant="outline" size="sm" asChild className="hidden sm:flex">
               <Link to="/plan-my-day">
                 <Sparkles className="h-4 w-4 mr-1" />
-                Plan My Day
+                <span className="hidden lg:inline">Plan My Day</span>
+                <span className="lg:hidden">Plan</span>
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild className="hidden lg:flex">
@@ -44,7 +46,8 @@ export function Header() {
             <Button size="sm" asChild className="bg-coral hover:bg-coral/90 text-coral-foreground">
               <Link to="/submit">
                 <Plus className="h-4 w-4 mr-1" />
-                Submit Event
+                <span className="hidden sm:inline">Submit Event</span>
+                <span className="sm:hidden">Submit</span>
               </Link>
             </Button>
           </div>

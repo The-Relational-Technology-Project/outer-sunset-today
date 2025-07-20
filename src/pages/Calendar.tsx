@@ -43,14 +43,14 @@ export default function Calendar() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Filter by:</span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap gap-2">
             {filters.map(filter => (
               <Button
                 key={filter.id}
                 variant={selectedFilter === filter.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedFilter(filter.id)}
-                className={selectedFilter === filter.id ? "bg-primary text-primary-foreground" : ""}
+                className={`${selectedFilter === filter.id ? "bg-primary text-primary-foreground" : ""} text-center justify-center`}
               >
                 {filter.label}
               </Button>
@@ -59,7 +59,7 @@ export default function Calendar() {
         </div>
 
         {/* Events Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredEvents.map(event => (
             <EventCard key={event.id} event={event} />
           ))}

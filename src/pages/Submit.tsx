@@ -79,7 +79,7 @@ export default function Submit() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date">Date *</Label>
                   <Input
@@ -88,6 +88,7 @@ export default function Submit() {
                     value={formData.date}
                     onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
                     required
+                    className="text-base" // Prevents zoom on iOS
                   />
                 </div>
                 <div className="space-y-2">
@@ -98,6 +99,7 @@ export default function Submit() {
                     value={formData.time}
                     onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
                     required
+                    className="text-base" // Prevents zoom on iOS
                   />
                 </div>
               </div>

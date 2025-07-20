@@ -28,27 +28,27 @@ export function EventCard({ event, compact = false }: EventCardProps) {
 
   return (
     <Card className={`hover:shadow-lg transition-all duration-200 ${event.isToday ? 'ring-2 ring-primary/20' : ''}`}>
-      <CardContent className={compact ? "p-4" : "p-6"}>
-        <div className="flex items-start justify-between mb-3">
+      <CardContent className={compact ? "p-4" : "p-4 sm:p-6"}>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 space-y-2 sm:space-y-0">
           <div className="flex-1">
-            <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg'} mb-1`}>
+            <h3 className={`font-semibold text-foreground ${compact ? 'text-base sm:text-sm' : 'text-lg'} mb-1 leading-tight`}>
               {event.title}
             </h3>
-            <div className="flex items-center text-muted-foreground text-sm space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center text-muted-foreground text-sm space-y-1 sm:space-y-0 sm:space-x-4">
               <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
+                <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
                 {event.time}
               </div>
               {event.date && !event.isToday && (
                 <div className="flex items-center">
-                  <CalendarIcon className="h-4 w-4 mr-1" />
+                  <CalendarIcon className="h-4 w-4 mr-1 flex-shrink-0" />
                   {event.date}
                 </div>
               )}
             </div>
           </div>
           <Badge 
-            className={`ml-3 ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.community}`}
+            className={`self-start sm:ml-3 text-xs ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.community}`}
           >
             {event.category}
           </Badge>

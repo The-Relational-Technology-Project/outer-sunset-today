@@ -33,10 +33,10 @@ export default function About() {
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-12">
+        <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-12">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-lg">
                 <Heart className="h-5 w-5 mr-2 text-coral" />
                 Our Mission
               </CardTitle>
@@ -52,7 +52,7 @@ export default function About() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-lg">
                 <Users className="h-5 w-5 mr-2 text-primary" />
                 Community Powered
               </CardTitle>
@@ -68,7 +68,7 @@ export default function About() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-lg">
                 <Calendar className="h-5 w-5 mr-2 text-secondary" />
                 Always Fresh
               </CardTitle>
@@ -83,7 +83,7 @@ export default function About() {
           </Card>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 mb-12">
+        <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 mb-12">
           <Card>
             <CardHeader>
               <CardTitle>Get Involved</CardTitle>

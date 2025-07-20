@@ -151,7 +151,7 @@ export default function PlanMyDay() {
 
               <div className="space-y-3">
                 <Label>What interests you? (Select all that apply)</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
                     { id: "community", label: "Community events" },
                     { id: "art", label: "Art & culture" },
@@ -160,13 +160,13 @@ export default function PlanMyDay() {
                     { id: "family", label: "Family activities" },
                     { id: "business", label: "Local businesses" }
                   ].map(interest => (
-                    <div key={interest.id} className="flex items-center space-x-2">
+                    <div key={interest.id} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                       <Checkbox
                         id={interest.id}
                         checked={preferences.interests.includes(interest.id)}
                         onCheckedChange={() => handleInterestToggle(interest.id)}
                       />
-                      <Label htmlFor={interest.id} className="text-sm">
+                      <Label htmlFor={interest.id} className="text-sm cursor-pointer">
                         {interest.label}
                       </Label>
                     </div>
@@ -243,17 +243,17 @@ export default function PlanMyDay() {
                 </Select>
               </div>
 
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                 <Button 
                   variant="outline" 
                   onClick={() => setStep(1)}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   Back
                 </Button>
                 <Button 
                   onClick={generatePlan} 
-                  className="flex-1 bg-primary hover:bg-primary/90"
+                  className="w-full sm:flex-1 bg-primary hover:bg-primary/90"
                   disabled={!preferences.energy || !preferences.social}
                 >
                   Create My Plan
@@ -345,19 +345,21 @@ export default function PlanMyDay() {
           <p className="text-muted-foreground">
             Want to try different preferences?
           </p>
-          <Button 
-            onClick={resetWizard} 
-            variant="outline" 
-            className="mr-4"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Start Over
-          </Button>
-          <Button asChild className="bg-coral hover:bg-coral/90 text-coral-foreground">
-            <a href="/calendar">
-              View All Events
-            </a>
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center sm:space-x-4">
+            <Button 
+              onClick={resetWizard} 
+              variant="outline" 
+              className="w-full sm:w-auto"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Start Over
+            </Button>
+            <Button asChild className="bg-coral hover:bg-coral/90 text-coral-foreground w-full sm:w-auto">
+              <a href="/calendar">
+                View All Events
+              </a>
+            </Button>
+          </div>
         </div>
       </main>
     </div>
