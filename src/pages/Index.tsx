@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { sampleEvents } from "@/data/sampleEvents";
 import { Link } from "react-router-dom";
 import { Calendar, Plus, Sun, Clock, Sparkles } from "lucide-react";
-import heroImage from "@/assets/outer-sunset-hero.jpg";
+import heroImage from "/lovable-uploads/a050e994-8519-4f19-b31d-225c2c982852.png";
 
 const Index = () => {
   const todaysEvents = sampleEvents.filter(event => event.isToday);
