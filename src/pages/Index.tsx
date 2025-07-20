@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { sampleEvents } from "@/data/sampleEvents";
 import { Link } from "react-router-dom";
-import { Calendar, Plus, Sun, Clock } from "lucide-react";
+import { Calendar, Plus, Sun, Clock, Sparkles } from "lucide-react";
 import heroImage from "@/assets/outer-sunset-hero.jpg";
 
 const Index = () => {
@@ -74,7 +74,13 @@ const Index = () => {
             <h2 className="text-3xl font-bold text-foreground">
               Happening Today
             </h2>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2 justify-center">
+              <Button variant="outline" asChild>
+                <Link to="/plan-my-day">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Plan My Day
+                </Link>
+              </Button>
               <Button variant="outline" asChild>
                 <Link to="/calendar">
                   <Calendar className="h-4 w-4 mr-2" />

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Plus, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function Header() {
@@ -20,6 +20,9 @@ export function Header() {
             <Link to="/calendar" className="text-foreground hover:text-primary transition-colors">
               Calendar
             </Link>
+            <Link to="/plan-my-day" className="text-foreground hover:text-primary transition-colors">
+              Plan My Day
+            </Link>
             <Link to="/about" className="text-foreground hover:text-primary transition-colors">
               About
             </Link>
@@ -27,9 +30,15 @@ export function Header() {
 
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm" asChild className="hidden sm:flex">
+              <Link to="/plan-my-day">
+                <Sparkles className="h-4 w-4 mr-1" />
+                Plan My Day
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="hidden lg:flex">
               <Link to="/calendar">
                 <Calendar className="h-4 w-4 mr-1" />
-                View Full Calendar
+                Calendar
               </Link>
             </Button>
             <Button size="sm" asChild className="bg-coral hover:bg-coral/90 text-coral-foreground">
