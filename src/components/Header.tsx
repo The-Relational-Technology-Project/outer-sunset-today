@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus, Sparkles } from "lucide-react";
+import { Calendar, Plus, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useMyPlan } from "@/contexts/MyPlanContext";
 
 export function Header() {
+  const { planEvents } = useMyPlan();
   return (
     <header className="bg-card border-b border-border">
       <div className="container mx-auto px-4 py-4">
@@ -21,8 +23,8 @@ export function Header() {
             <Link to="/calendar" className="text-foreground hover:text-primary transition-colors">
               Calendar
             </Link>
-            <Link to="/plan-my-day" className="text-foreground hover:text-primary transition-colors">
-              Plan My Day
+            <Link to="/my-plan" className="text-foreground hover:text-primary transition-colors">
+              My Plan
             </Link>
             <Link to="/about" className="text-foreground hover:text-primary transition-colors">
               About
@@ -31,10 +33,10 @@ export function Header() {
 
           <div className="flex items-center space-x-1 sm:space-x-2">
             <Button variant="outline" size="sm" asChild className="hidden sm:flex">
-              <Link to="/plan-my-day">
-                <Sparkles className="h-4 w-4 mr-1" />
-                <span className="hidden lg:inline">Plan My Day</span>
-                <span className="lg:hidden">Plan</span>
+              <Link to="/my-plan">
+                <ShoppingCart className="h-4 w-4 mr-1" />
+                <span className="hidden lg:inline">My Plan ({planEvents.length})</span>
+                <span className="lg:hidden">Plan ({planEvents.length})</span>
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild className="hidden lg:flex">
