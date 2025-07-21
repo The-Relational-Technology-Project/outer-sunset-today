@@ -1,367 +1,173 @@
 import { useState } from "react";
-import { Header } from "@/components/Header";
-import { EventCard } from "@/components/EventCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { EventCard } from "@/components/EventCard";
+import { ArrowLeft, Download, Share2, Trash2, FileText } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Header } from "@/components/Header";
+import { useMyPlan } from "@/contexts/MyPlanContext";
+import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
-import { sampleEvents } from "@/data/sampleEvents";
-import { MapPin, Clock, Coffee, Sparkles, RotateCcw } from "lucide-react";
 
-interface DayPlan {
-  timeSlot: string;
-  event: typeof sampleEvents[0] | null;
-  suggestion: string;
-}
+const PlanMyDay = () => {
+  const { planEvents, removeFromPlan, updateEventNotes, clearPlan } = useMyPlan();
 
-export default function PlanMyDay() {
-  const [step, setStep] = useState(1);
-  const [preferences, setPreferences] = useState({
-    startTime: "",
-    location: "",
-    interests: [] as string[],
-    energy: "",
-    social: ""
-  });
-  const [dayPlan, setDayPlan] = useState<DayPlan[]>([]);
+  const exportPlan = () => {
+    const planText = planEvents.map(event => {
+      const notes = event.notes ? `\nNotes: ${event.notes}` : '';
+      return `${event.title}\n${event.time} - ${event.location}\n${event.description}${notes}`;
+    }).join('\n\n---\n\n');
 
-  const getCurrentTimeSlot = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "morning";
-    if (hour < 17) return "afternoon";
-    return "evening";
+    const blob = new Blob([`My Outer Sunset Plan\n${'='.repeat(20)}\n\n${planText}`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-outer-sunset-plan.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Plan exported!");
   };
 
-  const handleInterestToggle = (interest: string) => {
-    setPreferences(prev => ({
-      ...prev,
-      interests: prev.interests.includes(interest)
-        ? prev.interests.filter(i => i !== interest)
-        : [...prev.interests, interest]
-    }));
-  };
+  const sharePlan = async () => {
+    const planText = planEvents.map(event => {
+      const notes = event.notes ? ` (${event.notes})` : '';
+      return `${event.title} - ${event.time} at ${event.location}${notes}`;
+    }).join('\n');
 
-  const generatePlan = () => {
-    const timeSlots = ["morning", "afternoon", "evening"];
-    const currentSlot = getCurrentTimeSlot();
-    const relevantSlots = timeSlots.slice(timeSlots.indexOf(currentSlot));
-    
-    const plan: DayPlan[] = relevantSlots.map(slot => {
-      let event = null;
-      let suggestion = "";
-
-      if (slot === "morning") {
-        suggestion = "Start your day with community connection";
-        event = sampleEvents.find(e => 
-          e.isToday && (e.category === "volunteer" || e.title.toLowerCase().includes("coffee"))
-        ) || null;
-      } else if (slot === "afternoon") {
-        suggestion = "Perfect time for exploration and culture";
-        event = sampleEvents.find(e => 
-          e.isToday && (e.category === "art" || e.category === "community")
-        ) || null;
-      } else {
-        suggestion = "Wind down with music and neighbors";
-        event = sampleEvents.find(e => 
-          e.isToday && (e.category === "music" || e.title.toLowerCase().includes("yoga"))
-        ) || null;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My Outer Sunset Plan',
+          text: `Check out my plan for the Outer Sunset:\n\n${planText}`,
+        });
+        toast.success("Plan shared!");
+      } catch (error) {
+        // Fall back to clipboard
+        fallbackShare(planText);
       }
-
-      return {
-        timeSlot: slot,
-        event,
-        suggestion
-      };
-    });
-
-    setDayPlan(plan);
-    setStep(3);
+    } else {
+      fallbackShare(planText);
+    }
   };
 
-  const resetWizard = () => {
-    setStep(1);
-    setPreferences({
-      startTime: "",
-      location: "",
-      interests: [],
-      energy: "",
-      social: ""
-    });
-    setDayPlan([]);
+  const fallbackShare = (planText: string) => {
+    navigator.clipboard.writeText(`My Outer Sunset Plan:\n\n${planText}`);
+    toast.success("Plan copied to clipboard!");
   };
 
-  if (step === 1) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        
-        <main className="container mx-auto px-4 py-8 max-w-2xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center justify-center">
-              <Sparkles className="h-8 w-8 mr-3 text-coral" />
-              Plan My Day
-            </h1>
-            <p className="text-muted-foreground">
-              Let us suggest the perfect Outer Sunset day just for you
-            </p>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Tell us about yourself</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>When are you starting your day?</Label>
-                <Select 
-                  value={preferences.startTime} 
-                  onValueChange={(value) => setPreferences(prev => ({ ...prev, startTime: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose your starting time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">Morning (before 12pm)</SelectItem>
-                    <SelectItem value="afternoon">Afternoon (12pm - 5pm)</SelectItem>
-                    <SelectItem value="evening">Evening (after 5pm)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Where in the Outer Sunset?</Label>
-                <Select 
-                  value={preferences.location} 
-                  onValueChange={(value) => setPreferences(prev => ({ ...prev, location: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose your general area" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beach">Near Ocean Beach</SelectItem>
-                    <SelectItem value="judah">Judah Street corridor</SelectItem>
-                    <SelectItem value="irving">Irving Street corridor</SelectItem>
-                    <SelectItem value="dunes">Near the Dunes</SelectItem>
-                    <SelectItem value="anywhere">I'm flexible!</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-3">
-                <Label>What interests you? (Select all that apply)</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {[
-                    { id: "community", label: "Community events" },
-                    { id: "art", label: "Art & culture" },
-                    { id: "music", label: "Live music" },
-                    { id: "volunteer", label: "Volunteering" },
-                    { id: "family", label: "Family activities" },
-                    { id: "business", label: "Local businesses" }
-                  ].map(interest => (
-                    <div key={interest.id} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                      <Checkbox
-                        id={interest.id}
-                        checked={preferences.interests.includes(interest.id)}
-                        onCheckedChange={() => handleInterestToggle(interest.id)}
-                      />
-                      <Label htmlFor={interest.id} className="text-sm cursor-pointer">
-                        {interest.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Button 
-                onClick={() => setStep(2)} 
-                className="w-full bg-coral hover:bg-coral/90 text-coral-foreground"
-                disabled={!preferences.startTime || !preferences.location}
-              >
-                Continue
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
-  if (step === 2) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        
-        <main className="container mx-auto px-4 py-8 max-w-2xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Almost there!
-            </h1>
-            <p className="text-muted-foreground">
-              Just a couple more questions to perfect your day
-            </p>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Your vibe today</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Energy level?</Label>
-                <Select 
-                  value={preferences.energy} 
-                  onValueChange={(value) => setPreferences(prev => ({ ...prev, energy: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="How are you feeling?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Chill and relaxed</SelectItem>
-                    <SelectItem value="medium">Ready for some activity</SelectItem>
-                    <SelectItem value="high">High energy, let's go!</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Social preference?</Label>
-                <Select 
-                  value={preferences.social} 
-                  onValueChange={(value) => setPreferences(prev => ({ ...prev, social: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="How social do you want to be?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="solo">Solo adventures</SelectItem>
-                    <SelectItem value="small">Small groups (2-10 people)</SelectItem>
-                    <SelectItem value="large">Big community gatherings</SelectItem>
-                    <SelectItem value="any">I'm open to anything</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setStep(1)}
-                  className="w-full sm:flex-1"
-                >
-                  Back
-                </Button>
-                <Button 
-                  onClick={generatePlan} 
-                  className="w-full sm:flex-1 bg-primary hover:bg-primary/90"
-                  disabled={!preferences.energy || !preferences.social}
-                >
-                  Create My Plan
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
-  // Step 3 - Show the plan
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center justify-center">
-            <Coffee className="h-8 w-8 mr-3 text-primary" />
-            Your Perfect Outer Sunset Day
-          </h1>
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <Link to="/" className="inline-flex items-center text-primary hover:underline mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Events
+          </Link>
+          <h1 className="text-3xl font-bold mb-2">My Plan</h1>
           <p className="text-muted-foreground">
-            Based on your preferences, here's what we recommend
+            Your saved events and itinerary for the Outer Sunset.
           </p>
         </div>
 
-        <div className="grid gap-8">
-          {dayPlan.map((slot, index) => (
-            <Card key={slot.timeSlot}>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2 text-coral" />
-                    <span className="capitalize">{slot.timeSlot}</span>
-                  </div>
-                  <Badge variant="outline">
-                    {slot.timeSlot === "morning" ? "9AM - 12PM" : 
-                     slot.timeSlot === "afternoon" ? "12PM - 5PM" : "5PM - 9PM"}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4 italic">
-                  {slot.suggestion}
-                </p>
-                
-                {slot.event ? (
-                  <EventCard event={slot.event} />
-                ) : (
-                  <Card className="bg-muted">
-                    <CardContent className="p-6 text-center">
-                      <p className="text-muted-foreground mb-2">
-                        No specific events for this time, but perfect for:
-                      </p>
-                      <div className="flex flex-wrap justify-center gap-2">
-                        {slot.timeSlot === "morning" && (
-                          <>
-                            <Badge variant="outline">Beach walk</Badge>
-                            <Badge variant="outline">Coffee at Day Moon</Badge>
-                            <Badge variant="outline">Dunes exploration</Badge>
-                          </>
-                        )}
-                        {slot.timeSlot === "afternoon" && (
-                          <>
-                            <Badge variant="outline">Browse Black Bird</Badge>
-                            <Badge variant="outline">Lunch on Irving</Badge>
-                            <Badge variant="outline">Art gallery hop</Badge>
-                          </>
-                        )}
-                        {slot.timeSlot === "evening" && (
-                          <>
-                            <Badge variant="outline">Sunset watching</Badge>
-                            <Badge variant="outline">Dinner with friends</Badge>
-                            <Badge variant="outline">Cozy cafe time</Badge>
-                          </>
-                        )}
+        {planEvents.length === 0 ? (
+          <Card className="max-w-2xl mx-auto text-center">
+            <CardContent className="p-8">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">Your plan is empty</h3>
+              <p className="text-muted-foreground mb-6">
+                Start adding events from the homepage to build your personalized itinerary.
+              </p>
+              <Button asChild>
+                <Link to="/">
+                  Browse Events
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="max-w-4xl mx-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {planEvents.length} {planEvents.length === 1 ? 'Event' : 'Events'} in Your Plan
+                </h2>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={sharePlan} size="sm">
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
+                <Button variant="outline" onClick={exportPlan} size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+                <Button variant="outline" onClick={clearPlan} size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {planEvents.map((event) => (
+                <Card key={event.id}>
+                  <CardContent className="p-6">
+                    <div className="grid lg:grid-cols-3 gap-6">
+                      <div className="lg:col-span-2">
+                        <EventCard event={event} showAddToPlan={false} />
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor={`notes-${event.id}`} className="text-sm font-medium">
+                            Personal Notes
+                          </Label>
+                          <Textarea
+                            id={`notes-${event.id}`}
+                            placeholder="Add your thoughts, reminders, or notes about this event..."
+                            value={event.notes || ''}
+                            onChange={(e) => updateEventNotes(event.id, e.target.value)}
+                            className="mt-1"
+                            rows={3}
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeFromPlan(event.id)}
+                          className="w-full"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Remove from Plan
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-        <div className="text-center mt-8 space-y-4">
-          <p className="text-muted-foreground">
-            Want to try different preferences?
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center sm:space-x-4">
-            <Button 
-              onClick={resetWizard} 
-              variant="outline" 
-              className="w-full sm:w-auto"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Start Over
-            </Button>
-            <Button asChild className="bg-coral hover:bg-coral/90 text-coral-foreground w-full sm:w-auto">
-              <a href="/calendar">
-                View All Events
-              </a>
-            </Button>
+            <div className="text-center mt-8 p-6 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-4">
+                Your plan is saved for this session only. Export or share it to keep a permanent copy.
+              </p>
+              <div className="flex justify-center gap-4">
+                <Button variant="outline" onClick={sharePlan}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Plan
+                </Button>
+                <Button onClick={exportPlan}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download as Text
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
-}
+};
+
+export default PlanMyDay;

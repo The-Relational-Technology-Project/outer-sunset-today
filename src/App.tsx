@@ -10,26 +10,29 @@ import About from "./pages/About";
 import PlanMyDay from "./pages/PlanMyDay";
 import NotFound from "./pages/NotFound";
 import WorkInProgressBanner from "./components/WorkInProgressBanner";
+import { MyPlanProvider } from "./contexts/MyPlanContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <WorkInProgressBanner />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/submit" element={<Submit />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/plan-my-day" element={<PlanMyDay />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <MyPlanProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <WorkInProgressBanner />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/submit" element={<Submit />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/my-plan" element={<PlanMyDay />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </MyPlanProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -1,6 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin, Calendar as CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, MapPin, Calendar as CalendarIcon, Plus, Check } from "lucide-react";
+import { useMyPlan } from "@/contexts/MyPlanContext";
+import { toast } from "sonner";
 
 interface EventCardProps {
   event: {
@@ -14,9 +17,21 @@ interface EventCardProps {
     isToday?: boolean;
   };
   compact?: boolean;
+  showAddToPlan?: boolean;
 }
 
-export function EventCard({ event, compact = false }: EventCardProps) {
+export function EventCard({ event, compact = false, showAddToPlan = true }: EventCardProps) {
+  const { addToPlan, removeFromPlan, isInPlan } = useMyPlan();
+  
+  const handleAddToPlan = () => {
+    if (isInPlan(event.id)) {
+      removeFromPlan(event.id);
+      toast.success("Removed from My Plan");
+    } else {
+      addToPlan(event);
+      toast.success("Added to My Plan");
+    }
+  };
   const categoryColors = {
     "community": "bg-primary text-primary-foreground",
     "business": "bg-coral text-coral-foreground", 
@@ -60,9 +75,32 @@ export function EventCard({ event, compact = false }: EventCardProps) {
         </div>
         
         {!compact && (
-          <p className="text-foreground text-sm leading-relaxed">
+          <p className="text-foreground text-sm leading-relaxed mb-4">
             {event.description}
           </p>
+        )}
+        
+        {showAddToPlan && (
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant={isInPlan(event.id) ? "default" : "outline"}
+              onClick={handleAddToPlan}
+              className="text-xs"
+            >
+              {isInPlan(event.id) ? (
+                <>
+                  <Check className="h-3 w-3 mr-1" />
+                  Added to Plan
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add to My Plan
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

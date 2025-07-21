@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { sampleEvents } from "@/data/sampleEvents";
 import { Link } from "react-router-dom";
-import { Calendar, Plus, Sun, Clock, Sparkles } from "lucide-react";
+import { Calendar, Plus, Sun, Clock, ShoppingCart, MapPin } from "lucide-react";
+import { useMyPlan } from "@/contexts/MyPlanContext";
 import heroImage from "/lovable-uploads/a050e994-8519-4f19-b31d-225c2c982852.png";
 
 const Index = () => {
+  const { planEvents } = useMyPlan();
   const todaysEvents = sampleEvents.filter(event => event.isToday);
   const upcomingEvents = sampleEvents.filter(event => !event.isToday).slice(0, 4);
 
@@ -76,9 +78,9 @@ const Index = () => {
             </h2>
             <div className="flex flex-col sm:flex-row gap-2 sm:justify-center">
               <Button variant="outline" asChild className="w-full sm:w-auto">
-                <Link to="/plan-my-day">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Plan My Day
+                <Link to="/my-plan">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  My Plan ({planEvents.length})
                 </Link>
               </Button>
               <Button variant="outline" asChild className="w-full sm:w-auto">
@@ -97,10 +99,32 @@ const Index = () => {
           </div>
           
           {todaysEvents.length > 0 ? (
-            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {todaysEvents.map(event => (
-                <EventCard key={event.id} event={event} />
-              ))}
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+              <div className="space-y-4">
+                {todaysEvents.map(event => (
+                  <EventCard key={event.id} event={event} />
+                ))}
+              </div>
+              <div className="lg:sticky lg:top-4">
+                <Card className="h-fit">
+                  <CardContent className="p-4">
+                    <div className="flex items-center mb-3">
+                      <MapPin className="h-4 w-4 mr-2 text-primary" />
+                      <h3 className="font-semibold">Event Locations</h3>
+                    </div>
+                    <div className="rounded-lg overflow-hidden">
+                      <img 
+                        src="/lovable-uploads/21d104dc-51c2-4b61-8fbe-b39e675315f0.png" 
+                        alt="Outer Sunset neighborhood map"
+                        className="w-full h-64 object-cover"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Interactive map coming soon! This shows the Outer Sunset area where today's events are happening.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           ) : (
             <Card>
