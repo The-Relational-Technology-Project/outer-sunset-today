@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { sampleEvents } from "@/data/sampleEvents";
 import { Link } from "react-router-dom";
-import { Calendar, Plus, Sun, Clock, ShoppingCart, MapPin } from "lucide-react";
+import { Calendar, Plus, Sun, Clock, Bookmark, MapPin } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import heroImage from "/lovable-uploads/a050e994-8519-4f19-b31d-225c2c982852.png";
 
@@ -79,8 +79,8 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-2 sm:justify-center">
               <Button variant="outline" asChild className="w-full sm:w-auto">
                 <Link to="/my-plan">
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  My Plan ({planEvents.length})
+                  <Bookmark className="h-4 w-4 mr-2" />
+                  My Plan
                 </Link>
               </Button>
               <Button variant="outline" asChild className="w-full sm:w-auto">

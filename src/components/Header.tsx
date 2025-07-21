@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus, ShoppingCart } from "lucide-react";
+import { Calendar, Plus, Bookmark } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 
@@ -34,9 +34,9 @@ export function Header() {
           <div className="flex items-center space-x-1 sm:space-x-2">
             <Button variant="outline" size="sm" asChild className="hidden sm:flex">
               <Link to="/my-plan">
-                <ShoppingCart className="h-4 w-4 mr-1" />
-                <span className="hidden lg:inline">My Plan ({planEvents.length})</span>
-                <span className="lg:hidden">Plan ({planEvents.length})</span>
+                <Bookmark className="h-4 w-4 mr-1" />
+                <span className="hidden lg:inline">My Plan</span>
+                <span className="lg:hidden">Plan</span>
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild className="hidden lg:flex">
