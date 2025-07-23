@@ -31,39 +31,24 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section */}
-      <section 
-        className="relative h-[400px] sm:h-[500px] bg-cover bg-center bg-no-repeat flex items-center justify-center"
-        style={{ backgroundImage: `url(${heroImage})` }}
-      >
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative text-center text-white px-4 max-w-4xl">
-          <h1 className="community-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-4 leading-tight">
-            Here's what's happening{" "}
-            <span className="text-accent">today</span>{" "}
-            in the Outer Sunset
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl opacity-90">
-            Your neighborhood dashboard for community life
-          </p>
-        </div>
-      </section>
-
       <main className="container mx-auto px-4">
-        {/* Time Widget */}
-        <div className="py-6 flex justify-center">
-          <Card className="bg-muted w-full max-w-lg">
+        {/* Header and Status */}
+        <div className="py-6 text-center">
+          <h1 className="community-heading text-2xl sm:text-3xl text-foreground mb-2">
+            Your neighborhood dashboard for community life
+          </h1>
+          <Card className="bg-muted w-full max-w-2xl mx-auto">
             <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm">
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-2 text-primary" />
-                  <span className="font-medium">Right now:</span>
-                  <span className="ml-1">{getCurrentTime()}</span>
-                </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-8 text-sm">
                 <div className="flex items-center">
                   <Sun className="h-4 w-4 mr-2 text-coral" />
                   <span className="font-medium">Sunset today:</span>
                   <span className="ml-1">{getSunsetTime()}</span>
+                </div>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="font-medium">Info updated at:</span>
+                  <span className="ml-1">8:42 AM</span>
                 </div>
               </div>
             </CardContent>
