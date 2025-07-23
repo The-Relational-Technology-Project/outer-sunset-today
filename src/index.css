@@ -1,51 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Caveat:wght@400;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Community Bulletin Board Aesthetic - weathered, organic, handmade feel */
 
 @layer base {
   :root {
-    /* Coastal Palette */
-    --background: 210 30% 98%;
-    --foreground: 215 25% 27%;
+    /* Weathered Community Palette */
+    --background: 35 15% 96%; /* Aged paper cream */
+    --foreground: 25 20% 15%; /* Deep charcoal */
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 27%;
+    --card: 30 25% 98%; /* Off-white paper */
+    --card-foreground: 25 20% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 27%;
+    --popover: 30 25% 98%;
+    --popover-foreground: 25 20% 15%;
 
-    /* Seafoam primary */
-    --primary: 165 45% 65%;
-    --primary-foreground: 0 0% 100%;
+    /* Faded red (like weathered mailbox) */
+    --primary: 355 60% 55%;
+    --primary-foreground: 0 0% 98%;
 
-    /* Coral accent */
-    --coral: 15 85% 75%;
-    --coral-foreground: 0 0% 100%;
+    /* Vibrant coral (like fresh stickers) */
+    --coral: 12 85% 65%;
+    --coral-foreground: 0 0% 98%;
 
-    /* Lavender secondary */
-    --secondary: 270 25% 85%;
-    --secondary-foreground: 215 25% 27%;
+    /* Weathered wood brown */
+    --secondary: 30 15% 75%;
+    --secondary-foreground: 25 20% 15%;
 
-    /* Fog gray muted */
-    --muted: 210 15% 92%;
-    --muted-foreground: 215 15% 55%;
+    /* Faded gray (like aged flyers) */
+    --muted: 35 10% 88%;
+    --muted-foreground: 25 15% 45%;
 
-    /* Lemon accent */
-    --accent: 55 90% 85%;
-    --accent-foreground: 215 25% 27%;
+    /* Bright yellow (like fresh flyers) */
+    --accent: 48 95% 75%;
+    --accent-foreground: 25 20% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 210 20% 88%;
-    --input: 210 20% 96%;
-    --ring: 165 45% 65%;
+    --border: 30 12% 82%;
+    --input: 35 15% 94%;
+    --ring: 355 60% 55%;
 
-    --radius: 0.5rem;
+    --radius: 0.3rem; /* Slightly sharper, more handmade feel */
+
+    /* Paper texture shadows */
+    --shadow-paper: 0 2px 8px -2px hsl(25 20% 15% / 0.1);
+    --shadow-sticker: 0 4px 12px -4px hsl(25 20% 15% / 0.2);
+    
+    /* Organic spacing */
+    --spacing-organic: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -109,6 +115,50 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-kalam;
+    background-image: 
+      radial-gradient(circle at 25% 25%, hsl(35 15% 94%) 1px, transparent 1px),
+      radial-gradient(circle at 75% 75%, hsl(30 10% 90%) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Handmade typography styles */
+  .community-heading {
+    @apply font-caveat font-bold;
+    text-shadow: 1px 1px 0px hsl(var(--background));
+  }
+
+  /* Flyer-style cards */
+  .bulletin-card {
+    @apply bg-card border border-border;
+    box-shadow: var(--shadow-paper);
+    transform: rotate(-0.5deg);
+    transition: all 0.2s ease;
+  }
+
+  .bulletin-card:hover {
+    transform: rotate(0deg) scale(1.02);
+    box-shadow: var(--shadow-sticker);
+  }
+
+  .bulletin-card:nth-child(even) {
+    transform: rotate(0.8deg);
+  }
+
+  .bulletin-card:nth-child(3n) {
+    transform: rotate(-0.8deg);
+  }
+
+  /* Sticker-style buttons */
+  .sticker-button {
+    @apply font-caveat font-semibold;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sticker);
+    transform: rotate(-1deg);
+    transition: all 0.2s ease;
+  }
+
+  .sticker-button:hover {
+    transform: rotate(0deg) scale(1.05);
   }
 }

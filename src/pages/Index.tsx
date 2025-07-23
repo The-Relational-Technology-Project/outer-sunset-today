@@ -38,7 +38,7 @@ const Index = () => {
       >
         <div className="absolute inset-0 bg-black/40"></div>
         <div className="relative text-center text-white px-4 max-w-4xl">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+          <h1 className="community-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-4 leading-tight">
             Here's what's happening{" "}
             <span className="text-accent">today</span>{" "}
             in the Outer Sunset
@@ -73,7 +73,7 @@ const Index = () => {
         {/* Today's Events */}
         <section className="py-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+            <h2 className="community-heading text-3xl sm:text-4xl text-foreground">
               Happening Today
             </h2>
             <div className="flex flex-col sm:flex-row gap-2 sm:justify-center">
@@ -89,7 +89,7 @@ const Index = () => {
                   <span className="hidden sm:inline">View Full </span>Calendar
                 </Link>
               </Button>
-              <Button asChild className="bg-coral hover:bg-coral/90 text-coral-foreground w-full sm:w-auto">
+              <Button asChild className="sticker-button bg-coral hover:bg-coral/90 text-coral-foreground w-full sm:w-auto">
                 <Link to="/submit">
                   <Plus className="h-4 w-4 mr-2" />
                   Submit Event
@@ -145,7 +145,7 @@ const Index = () => {
 
         {/* Coming Up Soon */}
         <section className="py-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">
+          <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
             Coming Up Soon
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
