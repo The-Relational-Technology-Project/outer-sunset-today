@@ -32,7 +32,7 @@ export function Header() {
           </nav>
 
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <Button variant="outline" size="sm" asChild className="hidden sm:flex">
+            <Button size="sm" asChild className="sticker-button bg-coral hover:bg-coral/90 text-coral-foreground">
               <Link to="/my-plan">
                 <Bookmark className="h-4 w-4 mr-1" />
                 <span className="hidden lg:inline">My Plan</span>
@@ -45,7 +45,7 @@ export function Header() {
                 Calendar
               </Link>
             </Button>
-            <Button size="sm" asChild className="bg-coral hover:bg-coral/90 text-coral-foreground">
+            <Button variant="outline" size="sm" asChild>
               <Link to="/submit">
                 <Plus className="h-4 w-4 mr-1" />
                 <span className="hidden sm:inline">Submit Event</span>

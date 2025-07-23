@@ -61,24 +61,16 @@ const Index = () => {
             <h2 className="community-heading text-3xl sm:text-4xl text-foreground">
               Happening Today
             </h2>
-            <div className="flex flex-col sm:flex-row gap-2 sm:justify-center">
-              <Button variant="outline" asChild className="w-full sm:w-auto">
-                <Link to="/my-plan">
-                  <Bookmark className="h-4 w-4 mr-2" />
-                  My Plan
-                </Link>
-              </Button>
-              <Button variant="outline" asChild className="w-full sm:w-auto">
-                <Link to="/calendar">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">View Full </span>Calendar
-                </Link>
-              </Button>
-              <Button asChild className="sticker-button bg-coral hover:bg-coral/90 text-coral-foreground w-full sm:w-auto">
-                <Link to="/submit">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Submit Event
-                </Link>
+            <div className="flex items-center">
+              <Button 
+                variant="outline" 
+                className="sticker-button bg-ocean hover:bg-ocean/90 text-ocean-foreground"
+                onClick={() => {
+                  // TODO: Implement counter logic
+                  console.log('Surfing OB today!');
+                }}
+              >
+                🏄‍♂️ I'm surfing OB today (42)
               </Button>
             </div>
           </div>

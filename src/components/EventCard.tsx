@@ -46,10 +46,10 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
       <CardContent className={compact ? "p-4" : "p-4 sm:p-6"}>
         <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 space-y-2 sm:space-y-0">
           <div className="flex-1">
-            <h3 className={`community-heading text-foreground ${compact ? 'text-lg sm:text-base' : 'text-xl'} mb-1 leading-tight`}>
+            <h3 className={`community-heading text-foreground ${compact ? 'text-xl sm:text-lg' : 'text-2xl'} mb-1 leading-tight`}>
               {event.title}
             </h3>
-            <div className="flex flex-col sm:flex-row sm:items-center text-muted-foreground text-sm space-y-1 sm:space-y-0 sm:space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center text-muted-foreground text-base space-y-1 sm:space-y-0 sm:space-x-4">
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
                 {event.time}
@@ -63,19 +63,19 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
             </div>
           </div>
           <Badge 
-            className={`sticker-button self-start sm:ml-3 text-xs ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.community}`}
+            className={`sticker-button self-start sm:ml-3 text-sm font-medium ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.community}`}
           >
             {event.category}
           </Badge>
         </div>
         
-        <div className="flex items-center text-muted-foreground text-sm mb-3">
+        <div className="flex items-center text-muted-foreground text-base mb-3">
           <MapPin className="h-4 w-4 mr-1" />
           {event.location}
         </div>
         
         {!compact && (
-          <p className="text-foreground text-sm leading-relaxed mb-4">
+          <p className="text-foreground text-base leading-relaxed mb-4">
             {event.description}
           </p>
         )}
