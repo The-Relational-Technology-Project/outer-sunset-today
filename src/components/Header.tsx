@@ -22,20 +22,25 @@ export function Header() {
             <Link to="/calendar" className="text-foreground hover:text-primary transition-colors">
               Calendar
             </Link>
+            <Link to="/map" className="text-foreground hover:text-primary transition-colors">
+              Map
+            </Link>
             <Link to="/about" className="text-foreground hover:text-primary transition-colors">
               About
             </Link>
           </nav>
 
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <Button size="sm" asChild className="sticker-button bg-coral hover:bg-coral/90 text-coral-foreground">
+            {/* Mobile: Show My Plan button prominently */}
+            <Button size="sm" asChild className="sticker-button bg-coral hover:bg-coral/90 text-coral-foreground md:hidden">
               <Link to="/my-plan">
                 <Bookmark className="h-4 w-4 mr-1" />
-                <span className="hidden lg:inline">My Plan</span>
-                <span className="lg:hidden">My Plan</span>
+                My Plan
               </Link>
             </Button>
-            <Button variant="outline" size="sm" asChild className="hidden lg:flex">
+            
+            {/* Desktop: Show all buttons */}
+            <Button variant="outline" size="sm" asChild className="hidden md:flex">
               <Link to="/calendar">
                 <Calendar className="h-4 w-4 mr-1" />
                 Calendar

@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { sampleEvents } from "@/data/sampleEvents";
 import { Link } from "react-router-dom";
-import { Calendar, Plus, Sun, Clock, Bookmark, MapPin } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import ArizmendiBoardWidget from "@/components/ArizmendiBoardWidget";
+import { TodaysMenus } from "@/components/TodaysMenus";
+import { MyPlanSidebar } from "@/components/MyPlanSidebar";
 const Index = () => {
   const {
     planEvents
@@ -35,68 +37,66 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Today's Events */}
-        <section className="py-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
-            <h2 className="community-heading text-3xl sm:text-4xl text-foreground">
-              Happening Today
-            </h2>
-            <div className="flex items-center">
-              {/* Removed surf button from here since it's now in the header area */}
-            </div>
-          </div>
-          
-          {todaysEvents.length > 0 ? <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-              <div className="space-y-4">
-                {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
-              </div>
-              <div className="lg:sticky lg:top-4">
-                <Card className="h-fit">
-                  <CardContent className="p-4">
-                    <div className="flex items-center mb-3">
-                      <MapPin className="h-4 w-4 mr-2 text-primary" />
-                      <h3 className="font-semibold">Event Locations</h3>
-                    </div>
-                    <div className="rounded-lg overflow-hidden">
-                      <img src="/lovable-uploads/21d104dc-51c2-4b61-8fbe-b39e675315f0.png" alt="Outer Sunset neighborhood map" className="w-full h-64 object-cover" />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Interactive map coming soon! This shows the Outer Sunset area where today's events are happening.
+        {/* Main Content Grid */}
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Left Side - Events */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Today's Events */}
+            <section>
+              <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
+                Happening Today
+              </h2>
+              
+              {todaysEvents.length > 0 ? (
+                <div className="space-y-4">
+                  {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <p className="text-muted-foreground mb-4">
+                      No events scheduled for today. Check back tomorrow or add something yourself!
                     </p>
+                    <Button asChild className="bg-coral hover:bg-coral/90 text-coral-foreground">
+                      <Link to="/submit">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Submit Today's Event
+                      </Link>
+                    </Button>
                   </CardContent>
                 </Card>
-              </div>
-            </div> : <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground mb-4">
-                  No events scheduled for today. Check back tomorrow or add something yourself!
-                </p>
-                <Button asChild className="bg-coral hover:bg-coral/90 text-coral-foreground">
-                  <Link to="/submit">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Submit Today's Event
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>}
-        </section>
+              )}
+            </section>
 
-        {/* Coming Up Soon */}
-        <section className="py-8">
-          <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
-            Coming Up Soon
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {upcomingEvents.map(event => <EventCard key={event.id} event={event} compact />)}
+            {/* Today's Menus */}
+            <TodaysMenus />
+
+            {/* Coming Up Soon */}
+            <section>
+              <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
+                Coming Up Soon
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {upcomingEvents.map(event => <EventCard key={event.id} event={event} compact />)}
+              </div>
+              {upcomingEvents.length > 0 && (
+                <div className="text-center mt-6">
+                  <Button variant="outline" asChild>
+                    <Link to="/calendar">
+                      View All Upcoming Events
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </section>
           </div>
-          {upcomingEvents.length > 0 && <div className="text-center mt-6">
-              <Button variant="outline" asChild>
-                <Link to="/calendar">
-                  View All Upcoming Events
-                </Link>
-              </Button>
-            </div>}
-        </section>
+
+          {/* Right Side - My Plan (Desktop only) */}
+          <div className="hidden lg:block">
+            <MyPlanSidebar />
+          </div>
+        </div>
+
 
         {/* Footer */}
         <footer className="py-12 text-center border-t border-border mt-12">
