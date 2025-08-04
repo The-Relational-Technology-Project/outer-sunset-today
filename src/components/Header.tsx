@@ -9,22 +9,18 @@ export function Header() {
     <header className="bg-card border-b border-border">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex flex-col items-start">
             <div className="text-xl sm:text-2xl font-bold text-foreground font-bulletin">
-              <span className="hidden sm:inline">outer sunset today</span>
-              <span className="sm:hidden">os today</span>
+              outer sunset today
+            </div>
+            <div className="text-sm text-muted-foreground font-handwritten">
+              what's going on
             </div>
           </Link>
           
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/" className="text-foreground hover:text-primary transition-colors">
-              Today
-            </Link>
             <Link to="/calendar" className="text-foreground hover:text-primary transition-colors">
               Calendar
-            </Link>
-            <Link to="/my-plan" className="text-foreground hover:text-primary transition-colors">
-              My Plan
             </Link>
             <Link to="/about" className="text-foreground hover:text-primary transition-colors">
               About
@@ -36,7 +32,7 @@ export function Header() {
               <Link to="/my-plan">
                 <Bookmark className="h-4 w-4 mr-1" />
                 <span className="hidden lg:inline">My Plan</span>
-                <span className="lg:hidden">Plan</span>
+                <span className="lg:hidden">My Plan</span>
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild className="hidden lg:flex">

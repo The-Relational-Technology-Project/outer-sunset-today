@@ -41,20 +41,17 @@ const ArizmendiBoardWidget = () => {
   };
 
   return (
-    <Card className="bg-paper border-cork shadow-bulletin transform rotate-[-0.5deg] mb-6">
-      <CardContent className="p-4">
-        <div className="flex items-center mb-2">
-          <span className="text-lg">🍕</span>
-          <h3 className="text-lg font-bold text-foreground ml-2 font-bulletin">
-            Arizmendi Pizza Today
+    <Card className="bg-paper border-cork shadow-bulletin transform rotate-[-0.5deg] w-fit mx-auto">
+      <CardContent className="p-3">
+        <div className="flex items-center mb-1">
+          <span className="text-sm">🍕</span>
+          <h3 className="text-sm font-bold text-foreground ml-2 font-bulletin">
+            Arizmendi Today
           </h3>
         </div>
-        <p className="text-sm text-muted-foreground font-handwritten leading-relaxed">
+        <p className="text-xs text-muted-foreground font-handwritten leading-relaxed max-w-64">
           {getCurrentPizza()}
         </p>
-        <div className="text-xs text-muted-foreground mt-2 font-bulletin">
-          1331 9th Ave • Open 7am-7pm
-        </div>
       </CardContent>
     </Card>
   );

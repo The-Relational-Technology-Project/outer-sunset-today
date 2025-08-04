@@ -1,3 +1,4 @@
+import React from "react";
 import { Header } from "@/components/Header";
 import { EventCard } from "@/components/EventCard";
 import { Button } from "@/components/ui/button";
@@ -11,28 +12,27 @@ const Index = () => {
   const {
     planEvents
   } = useMyPlan();
+  
+  const [surfCount, setSurfCount] = React.useState(42);
+  
   const todaysEvents = sampleEvents.filter(event => event.isToday);
   const upcomingEvents = sampleEvents.filter(event => !event.isToday).slice(0, 4);
-  const getCurrentTime = () => {
-    return new Date().toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'America/Los_Angeles'
-    });
-  };
-  const getSunsetTime = () => {
-    // Approximate sunset time for SF
-    return "7:24 PM";
+  
+  const handleSurfClick = () => {
+    setSurfCount(prev => prev + 1);
   };
   return <div className="min-h-screen bg-background">
       <Header />
       
       <main className="container mx-auto px-4">
         {/* Header and Status */}
-        <div className="py-6 text-center">
-          <h1 className="community-heading text-2xl sm:text-3xl text-foreground mb-6 font-handwritten">what's going on</h1>
-          <ArizmendiBoardWidget />
+        <div className="py-6 space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <ArizmendiBoardWidget />
+            <Button variant="outline" className="sticker-button bg-ocean hover:bg-ocean/90 text-ocean-foreground" onClick={handleSurfClick}>
+              🏄‍♂️ I'm surfing OB today ({surfCount})
+            </Button>
+          </div>
         </div>
 
         {/* Today's Events */}
@@ -42,12 +42,7 @@ const Index = () => {
               Happening Today
             </h2>
             <div className="flex items-center">
-              <Button variant="outline" className="sticker-button bg-ocean hover:bg-ocean/90 text-ocean-foreground" onClick={() => {
-              // TODO: Implement counter logic
-              console.log('Surfing OB today!');
-            }}>
-                🏄‍♂️ I'm surfing OB today (42)
-              </Button>
+              {/* Removed surf button from here since it's now in the header area */}
             </div>
           </div>
           
