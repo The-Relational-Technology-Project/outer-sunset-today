@@ -61,11 +61,11 @@ export const sampleEvents = [
   },
   {
     id: "7",
-    title: "Sunset Farmers Market",
-    time: "9:00 AM - 2:00 PM",
-    date: "Sunday",
-    location: "37th Avenue at Ortega to Quintara",
-    description: "Weekly farmers market with fresh produce, local vendors, and community vibes every Sunday.",
+    title: "Beach Cleanup & Coffee",
+    time: "8:00 AM - 10:00 AM",
+    date: "Today",
+    location: "Ocean Beach at Judah",
+    description: "Join neighbors for a morning beach cleanup followed by coffee at Java Beach Cafe. Bags and gloves provided!",
     category: "community",
     isToday: true
   }
