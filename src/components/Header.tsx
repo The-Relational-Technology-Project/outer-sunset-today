@@ -10,9 +10,9 @@ export function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="text-xl sm:text-2xl font-bold text-foreground">
-              <span className="hidden sm:inline">Outer Sunset Today</span>
-              <span className="sm:hidden">OS Today</span>
+            <div className="text-xl sm:text-2xl font-bold text-foreground font-bulletin">
+              <span className="hidden sm:inline">outer sunset today</span>
+              <span className="sm:hidden">os today</span>
             </div>
           </Link>
           

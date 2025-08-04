@@ -6,7 +6,7 @@ import { sampleEvents } from "@/data/sampleEvents";
 import { Link } from "react-router-dom";
 import { Calendar, Plus, Sun, Clock, Bookmark, MapPin } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
-import heroImage from "/lovable-uploads/a050e994-8519-4f19-b31d-225c2c982852.png";
+import ArizmendiBoardWidget from "@/components/ArizmendiBoardWidget";
 const Index = () => {
   const {
     planEvents
@@ -31,23 +31,8 @@ const Index = () => {
       <main className="container mx-auto px-4">
         {/* Header and Status */}
         <div className="py-6 text-center">
-          <h1 className="community-heading text-2xl sm:text-3xl text-foreground mb-2">Our neighborhood dashboard</h1>
-          <Card className="bg-muted w-full max-w-2xl mx-auto">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-8 text-sm">
-                <div className="flex items-center">
-                  <Sun className="h-4 w-4 mr-2 text-coral" />
-                  <span className="font-medium">Sunset today:</span>
-                  <span className="ml-1">{getSunsetTime()}</span>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="font-medium">Info updated at:</span>
-                  <span className="ml-1">8:42 AM</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <h1 className="community-heading text-2xl sm:text-3xl text-foreground mb-6 font-handwritten">what's going on</h1>
+          <ArizmendiBoardWidget />
         </div>
 
         {/* Today's Events */}
