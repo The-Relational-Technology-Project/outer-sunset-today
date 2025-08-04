@@ -7,36 +7,20 @@ import { sampleEvents } from "@/data/sampleEvents";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
-import ArizmendiBoardWidget from "@/components/ArizmendiBoardWidget";
 import { TodaysMenus } from "@/components/TodaysMenus";
 import { MyPlanSidebar } from "@/components/MyPlanSidebar";
+
 const Index = () => {
-  const {
-    planEvents
-  } = useMyPlan();
-  
-  const [surfCount, setSurfCount] = React.useState(42);
+  const { planEvents } = useMyPlan();
   
   const todaysEvents = sampleEvents.filter(event => event.isToday);
   const upcomingEvents = sampleEvents.filter(event => !event.isToday).slice(0, 4);
   
-  const handleSurfClick = () => {
-    setSurfCount(prev => prev + 1);
-  };
-  return <div className="min-h-screen bg-background">
+  return (
+    <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container mx-auto px-4">
-        {/* Header and Status */}
-        <div className="py-6 space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <ArizmendiBoardWidget />
-            <Button variant="outline" className="sticker-button bg-ocean hover:bg-ocean/90 text-ocean-foreground" onClick={handleSurfClick}>
-              🏄‍♂️ I'm surfing OB today ({surfCount})
-            </Button>
-          </div>
-        </div>
-
+      <main className="container mx-auto px-4 py-6">
         {/* Main Content Grid */}
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Left Side - Events */}
@@ -97,7 +81,6 @@ const Index = () => {
           </div>
         </div>
 
-
         {/* Footer */}
         <footer className="py-12 text-center border-t border-border mt-12">
           <p className="text-muted-foreground mb-4">
@@ -116,6 +99,8 @@ const Index = () => {
           </div>
         </footer>
       </main>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;

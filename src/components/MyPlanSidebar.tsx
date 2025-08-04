@@ -10,6 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 export function MyPlanSidebar() {
   const { planEvents, removeFromPlan, updateEventNotes } = useMyPlan();
   const { toast } = useToast();
+  const [surfCount, setSurfCount] = React.useState(42);
+
+  const handleSurfClick = () => {
+    setSurfCount(prev => prev + 1);
+  };
 
   const exportPlan = () => {
     const planText = planEvents.map(event => 
@@ -139,6 +144,16 @@ export function MyPlanSidebar() {
           >
             <Share2 className="h-3 w-3 mr-1" />
             Share
+          </Button>
+        </div>
+        
+        <div className="pt-4 border-t">
+          <Button 
+            variant="outline" 
+            className="w-full sticker-button bg-ocean hover:bg-ocean/90 text-ocean-foreground" 
+            onClick={handleSurfClick}
+          >
+            🏄‍♂️ Also, I'm surfing OB today ({surfCount})
           </Button>
         </div>
       </CardContent>
