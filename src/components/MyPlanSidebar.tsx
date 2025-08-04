@@ -77,6 +77,16 @@ export function MyPlanSidebar() {
               Your plan is empty. Add events from the left to get started!
             </p>
           </div>
+          
+          <div className="pt-4 border-t">
+            <Button 
+              variant="outline" 
+              className="w-full sticker-button bg-ocean hover:bg-ocean/90 text-ocean-foreground" 
+              onClick={handleSurfClick}
+            >
+              🏄‍♂️ I'm surfing OB today ({surfCount})
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

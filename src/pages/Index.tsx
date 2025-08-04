@@ -27,10 +27,6 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* Today's Events */}
             <section>
-              <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
-                Happening Today
-              </h2>
-              
               {todaysEvents.length > 0 ? (
                 <div className="space-y-4">
                   {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
