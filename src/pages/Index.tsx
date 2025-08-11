@@ -34,17 +34,19 @@ const Index = () => {
   const upcomingEvents = allEvents
     .filter(event => !event.isToday)
     .sort((a, b) => {
-      // Sort by actual date if available, otherwise keep original order
-      if (a.date && b.date) {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
-          return dateA.getTime() - dateB.getTime();
-        }
-      }
-      return 0;
+      // Parse dates for proper chronological sorting
+      const parseEventDate = (dateStr: string) => {
+        // Handle various date formats
+        const date = new Date(dateStr);
+        return isNaN(date.getTime()) ? new Date('2099-12-31') : date; // Put unparseable dates at end
+      };
+      
+      const dateA = parseEventDate(a.date || '');
+      const dateB = parseEventDate(b.date || '');
+      
+      return dateA.getTime() - dateB.getTime();
     })
-    .slice(0, 8); // Increased from 4 to 8 to show more events
+    .slice(0, 8); // Show first 8 chronologically sorted events
   
   console.log('Today\'s events:', todaysEvents);
   console.log('Upcoming events:', upcomingEvents);
