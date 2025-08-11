@@ -43,8 +43,14 @@ function parseVenueCSV(csvText: string, venueName: string): VenueEvent[] {
   
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
+    console.log(`Row ${i} raw line:`, lines[i]);
+    console.log(`Row ${i} parsed values:`, values);
+    console.log(`Row ${i} length check: ${values.length} >= ${Math.max(titleIndex, dateIndex, timeIndex, locationIndex) + 1}`);
     
-    if (values.length < Math.max(titleIndex, dateIndex, timeIndex, locationIndex) + 1) continue;
+    if (values.length < Math.max(titleIndex, dateIndex, timeIndex, locationIndex) + 1) {
+      console.log(`Skipping row ${i} - insufficient columns`);
+      continue;
+    }
     
     const title = values[titleIndex]?.trim();
     const dateStr = values[dateIndex]?.trim();
