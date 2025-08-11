@@ -18,6 +18,13 @@ export function useVenueEvents({ csvUrl, venueName, enabled = true }: UseVenueEv
 }
 
 export function formatVenueEventForCard(event: VenueEvent) {
+  const isToday = event.startTime.toDateString() === new Date().toDateString();
+  console.log(`Checking if ${event.title} is today:`, {
+    eventDate: event.startTime.toDateString(),
+    todayDate: new Date().toDateString(),
+    isToday
+  });
+  
   return {
     id: event.id,
     title: event.title,
@@ -34,6 +41,6 @@ export function formatVenueEventForCard(event: VenueEvent) {
     location: event.venue,
     description: `Join us at ${event.venue} for this event.`,
     category: event.category,
-    isToday: event.startTime.toDateString() === new Date().toDateString()
+    isToday: isToday
   };
 }

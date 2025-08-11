@@ -22,12 +22,17 @@ const Index = () => {
   
   // Convert venue events to the format expected by EventCard
   const formattedBlackBirdEvents = blackBirdEvents.map(formatVenueEventForCard);
+  console.log('Formatted Black Bird events:', formattedBlackBirdEvents);
   
   // Combine sample events with venue events
   const allEvents = [...sampleEvents, ...formattedBlackBirdEvents];
+  console.log('All combined events:', allEvents.length, allEvents);
   
   const todaysEvents = allEvents.filter(event => event.isToday);
   const upcomingEvents = allEvents.filter(event => !event.isToday).slice(0, 4);
+  
+  console.log('Today\'s events:', todaysEvents);
+  console.log('Upcoming events:', upcomingEvents);
   
   return (
     <div className="min-h-screen bg-background">
