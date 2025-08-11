@@ -29,7 +29,22 @@ const Index = () => {
   console.log('All combined events:', allEvents.length, allEvents);
   
   const todaysEvents = allEvents.filter(event => event.isToday);
-  const upcomingEvents = allEvents.filter(event => !event.isToday).slice(0, 4);
+  
+  // Sort upcoming events by date and show next week's events (or first 8)
+  const upcomingEvents = allEvents
+    .filter(event => !event.isToday)
+    .sort((a, b) => {
+      // Sort by actual date if available, otherwise keep original order
+      if (a.date && b.date) {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+          return dateA.getTime() - dateB.getTime();
+        }
+      }
+      return 0;
+    })
+    .slice(0, 8); // Increased from 4 to 8 to show more events
   
   console.log('Today\'s events:', todaysEvents);
   console.log('Upcoming events:', upcomingEvents);

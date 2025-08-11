@@ -36,7 +36,8 @@ export function formatVenueEventForCard(event: VenueEvent) {
     date: event.startTime.toLocaleDateString('en-US', { 
       weekday: 'long',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      year: 'numeric' // Added year for better sorting
     }),
     location: event.venue,
     description: `Join us at ${event.venue} for this event.`,
