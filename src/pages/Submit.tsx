@@ -5,44 +5,74 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, Clock, MapPin, Upload, Mail } from "lucide-react";
+import { Upload, Calendar, Mail, MessageCircle } from "lucide-react";
 
 export default function Submit() {
-  const [formData, setFormData] = useState({
+  const [basicForm, setBasicForm] = useState({
     title: "",
     date: "",
     time: "",
     location: "",
     description: "",
-    link: "",
-    category: "",
-    isRecurring: false,
-    contactEmail: ""
+    email: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    email: "",
+    message: ""
+  });
+
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleBasicSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would normally submit to your backend
     toast({
       title: "Event submitted!",
-      description: "Thank you for contributing to the community. We'll review and add your event soon.",
+      description: "Thank you! We'll review and add your event soon.",
     });
-    
-    // Reset form
-    setFormData({
-      title: "",
-      date: "",
-      time: "",
-      location: "",
-      description: "",
-      link: "",
-      category: "",
-      isRecurring: false,
-      contactEmail: ""
+    setBasicForm({ title: "", date: "", time: "", location: "", description: "", email: "" });
+  };
+
+  const handleImageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadedImage) {
+      toast({
+        title: "Please upload an image",
+        description: "Add a flyer or screenshot of your event.",
+        variant: "destructive"
+      });
+      return;
+    }
+    toast({
+      title: "Event submitted!",
+      description: "Thanks for the flyer! We'll extract the details and add your event soon.",
     });
+    setUploadedImage(null);
+    setImagePreview(null);
+  };
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Message sent!",
+      description: "We'll get back to you about recurring events or calendar integration.",
+    });
+    setContactForm({ name: "", email: "", message: "" });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -55,157 +85,212 @@ export default function Submit() {
             Submit an Event
           </h1>
           <p className="text-muted-foreground">
-            Help your neighbors discover what's happening! Share community events, local business happenings, or volunteer opportunities.
+            Help your neighbors discover what's happening in the Outer Sunset!
           </p>
         </div>
+
+        <Tabs defaultValue="quick" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="quick">Quick Submit</TabsTrigger>
+            <TabsTrigger value="details">Add Details</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="quick">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Upload className="h-5 w-5 mr-2" />
+                  Upload Event Flyer
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Got a flyer or screenshot? Upload it and we'll extract the details for you.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleImageSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="image-upload">Event Flyer or Screenshot</Label>
+                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="cursor-pointer flex flex-col items-center space-y-2"
+                      >
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          Click to upload or drag & drop
+                        </span>
+                      </label>
+                      {imagePreview && (
+                        <div className="mt-4">
+                          <img src={imagePreview} alt="Preview" className="max-w-full h-48 object-contain mx-auto rounded" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="quick-email">Your Email</Label>
+                    <Input
+                      id="quick-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      required
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full">
+                    Submit Event Flyer
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="details">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  Event Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleBasicSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Event Title</Label>
+                    <Input
+                      id="title"
+                      value={basicForm.title}
+                      onChange={(e) => setBasicForm(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="e.g., Community Garden Workday"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Date</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={basicForm.date}
+                        onChange={(e) => setBasicForm(prev => ({ ...prev, date: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="time">Time</Label>
+                      <Input
+                        id="time"
+                        type="time"
+                        value={basicForm.time}
+                        onChange={(e) => setBasicForm(prev => ({ ...prev, time: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      value={basicForm.location}
+                      onChange={(e) => setBasicForm(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="e.g., Ocean Beach at Judah St"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">What's happening?</Label>
+                    <Textarea
+                      id="description"
+                      value={basicForm.description}
+                      onChange={(e) => setBasicForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Brief description of the event"
+                      rows={3}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Your Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={basicForm.email}
+                      onChange={(e) => setBasicForm(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="your@email.com"
+                      required
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full">
+                    Submit Event
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <Separator className="my-8" />
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2" />
-              Event Details
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Share a Recurring Event or Calendar
             </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Want to share a website, calendar feed, or recurring event series? Let's chat!
+            </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleContactSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Event Title *</Label>
+                <Label htmlFor="contact-name">Your Name</Label>
                 <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="e.g., Community Garden Workday"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date *</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                    required
-                    className="text-base" // Prevents zoom on iOS
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">Time *</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-                    required
-                    className="text-base" // Prevents zoom on iOS
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location *</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="e.g., Ocean Beach at Judah St"
+                  id="contact-name"
+                  value={contactForm.name}
+                  onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select event type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="community">Community Event</SelectItem>
-                    <SelectItem value="business">Local Business Event</SelectItem>
-                    <SelectItem value="music">Live Music & Shows</SelectItem>
-                    <SelectItem value="volunteer">Volunteer Opportunity</SelectItem>
-                    <SelectItem value="family">Family-Friendly</SelectItem>
-                    <SelectItem value="art">Art & Culture</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="contact-email">Your Email</Label>
+                <Input
+                  id="contact-email"
+                  type="email"
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="contact-message">Tell us about it</Label>
                 <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Tell people what to expect, what to bring, and why they should come!"
+                  id="contact-message"
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="What kind of recurring events, website, or calendar would you like to share?"
                   rows={4}
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="link">Website or Link (optional)</Label>
-                <Input
-                  id="link"
-                  type="url"
-                  value={formData.link}
-                  onChange={(e) => setFormData(prev => ({ ...prev, link: e.target.value }))}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contactEmail">Your Email *</Label>
-                <Input
-                  id="contactEmail"
-                  type="email"
-                  value={formData.contactEmail}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contactEmail: e.target.value }))}
-                  placeholder="your@email.com"
-                  required
-                />
-                <p className="text-sm text-muted-foreground">
-                  We'll use this to contact you if we have questions about your event.
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="recurring"
-                  checked={formData.isRecurring}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({ ...prev, isRecurring: checked as boolean }))
-                  }
-                />
-                <Label htmlFor="recurring" className="text-sm">
-                  This is a recurring event
-                </Label>
-              </div>
-
-              <div className="bg-muted p-4 rounded-lg">
-                <h4 className="font-medium mb-2 flex items-center">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Have a flyer?
-                </h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Email us your flyer at{" "}
-                  <a href="mailto:events@outersunset.today" className="text-primary hover:underline">
-                    events@outersunset.today
-                  </a>
-                  {" "}or text it to{" "}
-                  <span className="font-medium">(415) 555-SUNSET</span>
-                </p>
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full bg-coral hover:bg-coral/90 text-coral-foreground"
-              >
-                Submit Event
+              <Button type="submit" variant="outline" className="w-full">
+                <Mail className="h-4 w-4 mr-2" />
+                Get In Touch
               </Button>
             </form>
           </CardContent>
