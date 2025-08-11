@@ -30,7 +30,8 @@ function parseVenueCSV(csvText: string, venueName: string): VenueEvent[] {
   console.log('CSV Headers:', headers);
   
   const titleIndex = headers.findIndex(h => h.toLowerCase().includes('event title') || h.toLowerCase().includes('title'));
-  const dateIndex = headers.findIndex(h => h.toLowerCase().includes('date'));
+  // Look for "Date" column specifically, not "Date (GMT)" 
+  const dateIndex = headers.findIndex(h => h.toLowerCase() === 'date');
   const timeIndex = headers.findIndex(h => h.toLowerCase().includes('time'));
   const locationIndex = headers.findIndex(h => h.toLowerCase().includes('location'));
   
