@@ -9,13 +9,25 @@ import { Plus } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { TodaysMenus } from "@/components/TodaysMenus";
 import { MyPlanSidebar } from "@/components/MyPlanSidebar";
-import { VenueEvents } from "@/components/VenueEvents";
+import { useVenueEvents, formatVenueEventForCard } from "@/hooks/useVenueEvents";
 
 const Index = () => {
   const { planEvents } = useMyPlan();
   
-  const todaysEvents = sampleEvents.filter(event => event.isToday);
-  const upcomingEvents = sampleEvents.filter(event => !event.isToday).slice(0, 4);
+  // Fetch Black Bird Bookstore events
+  const { data: blackBirdEvents = [], isLoading: isLoadingVenueEvents } = useVenueEvents({
+    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkcrpUFZT-ogRUzFTA0fPKILyXoIe-GG0Gw7ishgTVLad1gaLBRe744h89zE2ngJzMp5-Dr-F_Z4xO/pub?gid=1687511126&single=true&output=csv",
+    venueName: "Black Bird Bookstore"
+  });
+  
+  // Convert venue events to the format expected by EventCard
+  const formattedBlackBirdEvents = blackBirdEvents.map(formatVenueEventForCard);
+  
+  // Combine sample events with venue events
+  const allEvents = [...sampleEvents, ...formattedBlackBirdEvents];
+  
+  const todaysEvents = allEvents.filter(event => event.isToday);
+  const upcomingEvents = allEvents.filter(event => !event.isToday).slice(0, 4);
   
   return (
     <div className="min-h-screen bg-background">
@@ -30,6 +42,11 @@ const Index = () => {
             <section>
               {todaysEvents.length > 0 ? (
                 <div className="space-y-4">
+                  {isLoadingVenueEvents && (
+                    <div className="animate-pulse space-y-4">
+                      <div className="bulletin-card h-32 bg-muted/50 rounded-lg" />
+                    </div>
+                  )}
                   {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
                 </div>
               ) : (
@@ -52,19 +69,18 @@ const Index = () => {
             {/* Today's Menus */}
             <TodaysMenus />
 
-            {/* Black Bird Bookstore Events */}
-            <VenueEvents
-              csvUrl="https://docs.google.com/spreadsheets/d/e/2PACX-1vQkcrpUFZT-ogRUzFTA0fPKILyXoIe-GG0Gw7ishgTVLad1gaLBRe744h89zE2ngJzMp5-Dr-F_Z4xO/pub?gid=1687511126&single=true&output=csv"
-              venueName="Black Bird Bookstore"
-              title="At Black Bird Bookstore"
-            />
-
             {/* Coming Up Soon */}
             <section>
               <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
                 Coming Up Soon
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
+                {isLoadingVenueEvents && (
+                  <>
+                    <div className="animate-pulse bulletin-card h-32 bg-muted/50 rounded-lg" />
+                    <div className="animate-pulse bulletin-card h-32 bg-muted/50 rounded-lg" />
+                  </>
+                )}
                 {upcomingEvents.map(event => <EventCard key={event.id} event={event} compact />)}
               </div>
               {upcomingEvents.length > 0 && (
