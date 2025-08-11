@@ -9,6 +9,7 @@ import { Plus } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { TodaysMenus } from "@/components/TodaysMenus";
 import { MyPlanSidebar } from "@/components/MyPlanSidebar";
+import { VenueEvents } from "@/components/VenueEvents";
 
 const Index = () => {
   const { planEvents } = useMyPlan();
@@ -50,6 +51,13 @@ const Index = () => {
 
             {/* Today's Menus */}
             <TodaysMenus />
+
+            {/* Black Bird Bookstore Events */}
+            <VenueEvents
+              csvUrl="https://docs.google.com/spreadsheets/d/e/2PACX-1vQkcrpUFZT-ogRUzFTA0fPKILyXoIe-GG0Gw7ishgTVLad1gaLBRe744h89zE2ngJzMp5-Dr-F_Z4xO/pub?gid=1687511126&single=true&output=csv"
+              venueName="Black Bird Bookstore"
+              title="At Black Bird Bookstore"
+            />
 
             {/* Coming Up Soon */}
             <section>
