@@ -23,10 +23,15 @@ export async function fetchVenueEvents(csvUrl: string, venueName: string): Promi
 }
 
 function parseVenueCSV(csvText: string, venueName: string): VenueEvent[] {
-  const lines = csvText.trim().split('\n');
-  console.log(`Processing ${lines.length} lines for ${venueName}`);
+  console.log(`Processing CSV for ${venueName}`);
   
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  // Split CSV into proper rows, handling multi-line values
+  const rows = parseCSVRows(csvText);
+  console.log(`Found ${rows.length} rows after proper CSV parsing`);
+  
+  if (rows.length === 0) return [];
+  
+  const headers = rows[0];
   console.log('CSV Headers:', headers);
   
   const titleIndex = headers.findIndex(h => h.toLowerCase().includes('event title') || h.toLowerCase().includes('title'));
@@ -41,10 +46,9 @@ function parseVenueCSV(csvText: string, venueName: string): VenueEvent[] {
   const now = new Date();
   console.log('Current time:', now);
   
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
-    console.log(`Row ${i} raw line:`, lines[i]);
-    console.log(`Row ${i} parsed values:`, values);
+  for (let i = 1; i < rows.length; i++) {
+    const values = rows[i];
+    console.log(`Row ${i} values:`, values);
     console.log(`Row ${i} length check: ${values.length} >= ${Math.max(titleIndex, dateIndex, timeIndex, locationIndex) + 1}`);
     
     if (values.length < Math.max(titleIndex, dateIndex, timeIndex, locationIndex) + 1) {
@@ -83,26 +87,48 @@ function parseVenueCSV(csvText: string, venueName: string): VenueEvent[] {
   return events.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 }
 
-function parseCSVLine(line: string): string[] {
-  const values: string[] = [];
-  let current = '';
+function parseCSVRows(csvText: string): string[][] {
+  const rows: string[][] = [];
+  const lines = csvText.trim().split('\n');
+  let currentRow: string[] = [];
   let inQuotes = false;
+  let currentField = '';
   
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex];
     
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      values.push(current.trim());
-      current = '';
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        currentRow.push(currentField.trim().replace(/^"|"$/g, ''));
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+    }
+    
+    // If we're not in quotes, this line ends the current row
+    if (!inQuotes) {
+      currentRow.push(currentField.trim().replace(/^"|"$/g, ''));
+      rows.push(currentRow);
+      currentRow = [];
+      currentField = '';
     } else {
-      current += char;
+      // Add line break to current field since we're inside quotes
+      currentField += '\n';
     }
   }
   
-  values.push(current.trim());
-  return values.map(v => v.replace(/^"(.*)"$/, '$1'));
+  // Handle any remaining row
+  if (currentRow.length > 0 || currentField) {
+    if (currentField) currentRow.push(currentField.trim().replace(/^"|"$/g, ''));
+    if (currentRow.length > 0) rows.push(currentRow);
+  }
+  
+  return rows;
 }
 
 function parseEventDateTime(dateStr: string, timeStr: string): Date | null {
