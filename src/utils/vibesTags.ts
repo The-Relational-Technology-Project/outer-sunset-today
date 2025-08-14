@@ -8,27 +8,27 @@ const vibeTags: Record<string, VibeTag> = {
   strongEnergy: {
     emoji: "🏄‍♂️",
     label: "Strong neighborhood energy here",
-    className: "bg-gradient-to-r from-ocean-blue/20 to-sunset-orange/20 text-ocean-blue border-ocean-blue/30"
+    className: "bg-white text-ocean-blue border border-ocean-blue/20 shadow-sm"
   },
   hiddenGem: {
     emoji: "🐚",
     label: "Hidden gem",
-    className: "bg-gradient-to-r from-coral/20 to-sunset-pink/20 text-coral border-coral/30"
+    className: "bg-white text-coral border border-coral/20 shadow-sm"
   },
   communityFave: {
     emoji: "🌺",
     label: "Community fave",
-    className: "bg-gradient-to-r from-sunset-orange/20 to-sunset-pink/20 text-sunset-orange border-sunset-orange/30"
+    className: "bg-white text-sunset-orange border border-sunset-orange/20 shadow-sm"
   },
   peopleScoping: {
     emoji: "👀",
     label: "People are scoping this",
-    className: "bg-gradient-to-r from-dune-tan/20 to-sage-green/20 text-dune-tan border-dune-tan/30"
+    className: "bg-white text-dune-tan border border-dune-tan/30 shadow-sm"
   },
   chillVibes: {
     emoji: "🌫",
     label: "Chill vibes here",
-    className: "bg-gradient-to-r from-sage-green/20 to-ocean-blue/20 text-sage-green border-sage-green/30"
+    className: "bg-white text-sage-green border border-sage-green/20 shadow-sm"
   }
 };
 

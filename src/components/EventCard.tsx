@@ -65,7 +65,7 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
             </div>
           </div>
           <Badge 
-            className={`sticker-button self-start sm:ml-3 text-sm font-medium ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.community}`}
+            className={`sticker-button self-start sm:ml-3 text-base font-medium ${categoryColors[event.category as keyof typeof categoryColors] || categoryColors.community}`}
           >
             {event.category}
           </Badge>
@@ -76,15 +76,6 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
           {event.location}
         </div>
         
-        <div className="mb-4">
-          <Badge 
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${vibeTag.className}`}
-          >
-            <span className="mr-1">{vibeTag.emoji}</span>
-            {vibeTag.label}
-          </Badge>
-        </div>
-        
         {!compact && (
           <p className="text-foreground text-base leading-relaxed mb-4">
             {event.description}
@@ -92,26 +83,36 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
         )}
         
         {showAddToPlan && (
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              variant={isInPlan(event.id) ? "default" : "outline"}
-              onClick={handleAddToPlan}
-              className="sticker-button text-xs bg-coral hover:bg-coral/90 text-coral-foreground"
-            >
-              {isInPlan(event.id) ? (
-                <>
-                  <Check className="h-3 w-3 mr-1" />
-                  Added to Plan
-                </>
-              ) : (
-                <>
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add to My Plan
-                </>
-              )}
-            </Button>
-          </div>
+          <>
+            <div className="mb-3">
+              <Badge 
+                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${vibeTag.className}`}
+              >
+                <span className="mr-1">{vibeTag.emoji}</span>
+                {vibeTag.label}
+              </Badge>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant={isInPlan(event.id) ? "default" : "outline"}
+                onClick={handleAddToPlan}
+                className="sticker-button text-sm bg-coral hover:bg-coral/90 text-coral-foreground"
+              >
+                {isInPlan(event.id) ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Added to Plan
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add to My Plan
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
