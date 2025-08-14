@@ -38,9 +38,26 @@ export function getVibeTag(event: {
   isToday?: boolean; 
   title?: string; 
 }): VibeTag {
-  // Simple algorithm to assign vibe tags based on event characteristics
-  // In a real implementation, this would consider user engagement data
+  // Assign specific vibe tags to demo events
+  if (event.title?.includes("Poetry & Prose Open Mic")) {
+    return vibeTags.hiddenGem;
+  }
   
+  if (event.title?.includes("Sunset Farmers Market")) {
+    return vibeTags.communityFave;
+  }
+  
+  if (event.title?.includes("Beach Cleanup & Coffee")) {
+    return vibeTags.strongEnergy;
+  }
+  
+  // For events at bookstores, treat as "chill vibes"
+  if (event.title?.toLowerCase().includes("book") || 
+      event.title?.toLowerCase().includes("poetry")) {
+    return vibeTags.chillVibes;
+  }
+  
+  // Simple algorithm for other events
   const eventHash = event.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const tagKeys = Object.keys(vibeTags);
   
