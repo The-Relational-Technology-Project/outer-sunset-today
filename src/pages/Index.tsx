@@ -64,11 +64,6 @@ const Index = () => {
             <section>
               {todaysEvents.length > 0 ? (
                 <div className="space-y-4">
-                  {isLoadingVenueEvents && (
-                    <div className="animate-pulse space-y-4">
-                      <div className="bulletin-card h-32 bg-muted/50 rounded-lg" />
-                    </div>
-                  )}
                   {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
                 </div>
               ) : (
