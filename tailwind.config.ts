@@ -36,6 +36,26 @@ export default {
 					DEFAULT: 'hsl(var(--coral))',
 					foreground: 'hsl(var(--coral-foreground))'
 				},
+				'ocean-blue': {
+					DEFAULT: 'hsl(var(--ocean-blue))',
+					foreground: 'hsl(var(--ocean-blue-foreground))'
+				},
+				'sunset-orange': {
+					DEFAULT: 'hsl(var(--sunset-orange))',
+					foreground: 'hsl(var(--sunset-orange-foreground))'
+				},
+				'sunset-pink': {
+					DEFAULT: 'hsl(var(--sunset-pink))',
+					foreground: 'hsl(var(--sunset-pink-foreground))'
+				},
+				'dune-tan': {
+					DEFAULT: 'hsl(var(--dune-tan))',
+					foreground: 'hsl(var(--dune-tan-foreground))'
+				},
+				'sage-green': {
+					DEFAULT: 'hsl(var(--sage-green))',
+					foreground: 'hsl(var(--sage-green-foreground))'
+				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'

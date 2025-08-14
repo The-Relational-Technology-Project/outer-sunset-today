@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, MapPin, Calendar as CalendarIcon, Plus, Check } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { toast } from "sonner";
+import { getVibeTag } from "@/utils/vibesTags";
 
 interface EventCardProps {
   event: {
@@ -22,6 +23,7 @@ interface EventCardProps {
 
 export function EventCard({ event, compact = false, showAddToPlan = true }: EventCardProps) {
   const { addToPlan, removeFromPlan, isInPlan } = useMyPlan();
+  const vibeTag = getVibeTag(event);
   
   const handleAddToPlan = () => {
     if (isInPlan(event.id)) {
@@ -72,6 +74,15 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
         <div className="flex items-center text-muted-foreground text-base mb-3">
           <MapPin className="h-4 w-4 mr-1" />
           {event.location}
+        </div>
+        
+        <div className="mb-4">
+          <Badge 
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${vibeTag.className}`}
+          >
+            <span className="mr-1">{vibeTag.emoji}</span>
+            {vibeTag.label}
+          </Badge>
         </div>
         
         {!compact && (

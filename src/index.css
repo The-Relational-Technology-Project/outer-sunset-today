@@ -25,6 +25,22 @@
     --coral: 12 85% 65%;
     --coral-foreground: 0 0% 98%;
 
+    /* Outer Sunset vibes */
+    --ocean-blue: 210 70% 60%;
+    --ocean-blue-foreground: 0 0% 98%;
+    
+    --sunset-orange: 25 90% 65%;
+    --sunset-orange-foreground: 0 0% 98%;
+    
+    --sunset-pink: 345 75% 70%;
+    --sunset-pink-foreground: 0 0% 98%;
+    
+    --dune-tan: 35 40% 70%;
+    --dune-tan-foreground: 25 20% 15%;
+    
+    --sage-green: 120 25% 65%;
+    --sage-green-foreground: 0 0% 98%;
+
     /* Weathered wood brown */
     --secondary: 30 15% 75%;
     --secondary-foreground: 25 20% 15%;
