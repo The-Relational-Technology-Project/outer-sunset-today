@@ -10,6 +10,7 @@ import { TodaysMenus } from "@/components/TodaysMenus";
 import { MyPlanSidebar } from "@/components/MyPlanSidebar";
 import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WeatherWidget } from "@/components/WeatherWidget";
 
 const Index = () => {
   const { planEvents } = useMyPlan();
@@ -97,7 +98,8 @@ const Index = () => {
           </div>
 
           {/* Right Side - My Plan (Desktop only) */}
-          <div className="hidden lg:block">
+          <div className="hidden lg:block space-y-4">
+            <WeatherWidget />
             <MyPlanSidebar />
           </div>
         </div>
