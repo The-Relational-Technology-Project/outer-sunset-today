@@ -105,17 +105,20 @@ const Index = () => {
         {/* Footer */}
         <footer className="py-12 text-center border-t border-border mt-12">
           <p className="text-muted-foreground mb-4">
-            Made with ❤️ by neighbors, for neighbors
+            By neighbors, for neighbors
           </p>
           <div className="flex justify-center space-x-6 text-sm">
             <Link to="/about" className="text-primary hover:underline">
               About
             </Link>
-            <a href="mailto:hello@outersunset.today" className="text-primary hover:underline">
+            <Link to="/contact" className="text-primary hover:underline">
               Contact
-            </a>
-            <Link to="/submit" className="text-primary hover:underline">
-              Submit Event
+            </Link>
+            <Link to="/privacy" className="text-primary hover:underline">
+              Privacy
+            </Link>
+            <Link to="/terms" className="text-primary hover:underline">
+              Terms
             </Link>
           </div>
         </footer>

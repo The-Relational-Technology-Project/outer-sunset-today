@@ -18,15 +18,6 @@ export function Header() {
             </div>
           </Link>
           
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/calendar" className="text-foreground hover:text-primary transition-colors text-lg">
-              Calendar
-            </Link>
-            <Link to="/about" className="text-foreground hover:text-primary transition-colors text-lg">
-              About
-            </Link>
-          </nav>
-
           <div className="flex items-center space-x-1 sm:space-x-2">
             {/* Mobile: Show My Plan button prominently */}
             <Button size="sm" asChild className="sticker-button bg-coral hover:bg-coral/90 text-coral-foreground md:hidden">
@@ -36,13 +27,7 @@ export function Header() {
               </Link>
             </Button>
             
-            {/* Desktop: Show all buttons */}
-            <Button variant="outline" size="sm" asChild className="hidden md:flex">
-              <Link to="/calendar">
-                <Calendar className="h-4 w-4 mr-1" />
-                Calendar
-              </Link>
-            </Button>
+            {/* Desktop: Show submit button */}
             <Button variant="outline" size="sm" asChild>
               <Link to="/submit">
                 <Plus className="h-4 w-4 mr-1" />
