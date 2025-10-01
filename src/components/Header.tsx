@@ -13,7 +13,7 @@ export function Header() {
             <img 
               src="/favicon.png" 
               alt="Outer Sunset Today logo" 
-              className="h-12 w-12 sm:h-14 sm:w-14 object-contain bg-card rounded-lg p-1"
+              className="h-12 w-12 sm:h-14 sm:w-14 object-contain"
             />
             <div className="flex flex-col items-start">
               <div className="text-3xl sm:text-4xl font-bold text-foreground font-bulletin leading-tight">
