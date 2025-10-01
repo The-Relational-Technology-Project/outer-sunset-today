@@ -115,12 +115,36 @@ export type Database = {
         }
         Relationships: []
       }
+      surf_counts: {
+        Row: {
+          count: number
+          created_at: string
+          id: string
+          surf_date: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          id?: string
+          surf_date?: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          id?: string
+          surf_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_surf_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
