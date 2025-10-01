@@ -2,48 +2,8 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin } from "lucide-react";
-
-interface MenuItem {
-  restaurant: string;
-  location: string;
-  hours: string;
-  specialToday: string;
-  category: string;
-  price?: string;
-}
-
-const todaysMenus: MenuItem[] = [
-  {
-    restaurant: "Arizmendi Bakery",
-    location: "1331 9th Ave",
-    hours: "7am-7pm",
-    specialToday: "Pizza of the Day: Roasted Veggie & Goat Cheese",
-    category: "pizza",
-    price: "$4.50/slice"
-  },
-  {
-    restaurant: "Day Moon Bakery",
-    location: "1329 9th Ave", 
-    hours: "7am-3pm",
-    specialToday: "Fresh Sourdough & Seasonal Fruit Tarts",
-    category: "bakery"
-  },
-  {
-    restaurant: "Braid Bakery",
-    location: "1438 Irving St",
-    hours: "8am-4pm", 
-    specialToday: "Cardamom Buns & House-Made Granola",
-    category: "bakery"
-  },
-  {
-    restaurant: "Outerlands",
-    location: "4001 Judah St",
-    hours: "9am-9pm",
-    specialToday: "Dutch Baby Pancake & Local Dungeness Crab Toast",
-    category: "restaurant",
-    price: "$18-28"
-  }
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTodaysMenus } from "@/hooks/useDailyMenus";
 
 const categoryColors: Record<string, string> = {
   pizza: "bg-coral/20 text-coral-foreground border-coral/30",
@@ -52,14 +12,51 @@ const categoryColors: Record<string, string> = {
 };
 
 export function TodaysMenus() {
+  const { data: menus, isLoading } = useTodaysMenus();
+
+  if (isLoading) {
+    return (
+      <section className="py-8">
+        <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
+          Today's Menus
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-4 w-32 mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-24" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (!menus || menus.length === 0) {
+    return (
+      <section className="py-8">
+        <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
+          Today's Menus
+        </h2>
+        <p className="text-muted-foreground">No menu specials available for today.</p>
+      </section>
+    );
+  }
+
   return (
     <section className="py-8">
       <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
         Today's Menus
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        {todaysMenus.map((menu, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
+        {menus.map((menu) => (
+          <Card key={menu.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div>
@@ -78,7 +75,7 @@ export function TodaysMenus() {
             </CardHeader>
             <CardContent className="pt-0">
               <p className="text-foreground font-medium mb-2">
-                {menu.specialToday}
+                {menu.special_item}
               </p>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center">

@@ -3,53 +3,24 @@ import { Header } from "@/components/Header";
 import { EventCard } from "@/components/EventCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { sampleEvents } from "@/data/sampleEvents";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { TodaysMenus } from "@/components/TodaysMenus";
 import { MyPlanSidebar } from "@/components/MyPlanSidebar";
-import { useVenueEvents, formatVenueEventForCard } from "@/hooks/useVenueEvents";
+import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
   const { planEvents } = useMyPlan();
   
-  // Fetch Black Bird Bookstore events
-  const { data: blackBirdEvents = [], isLoading: isLoadingVenueEvents } = useVenueEvents({
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkcrpUFZT-ogRUzFTA0fPKILyXoIe-GG0Gw7ishgTVLad1gaLBRe744h89zE2ngJzMp5-Dr-F_Z4xO/pub?gid=1687511126&single=true&output=csv",
-    venueName: "Black Bird Bookstore"
-  });
+  // Fetch events from database
+  const { data: todaysEventsData = [], isLoading: isLoadingToday } = useTodaysEvents();
+  const { data: upcomingEventsData = [], isLoading: isLoadingUpcoming } = useUpcomingEvents();
   
-  // Convert venue events to the format expected by EventCard
-  const formattedBlackBirdEvents = blackBirdEvents.map(formatVenueEventForCard);
-  console.log('Formatted Black Bird events:', formattedBlackBirdEvents);
-  
-  // Combine sample events with venue events
-  const allEvents = [...sampleEvents, ...formattedBlackBirdEvents];
-  console.log('All combined events:', allEvents.length, allEvents);
-  
-  const todaysEvents = allEvents.filter(event => event.isToday);
-  
-  // Sort upcoming events by date and show next week's events (or first 8)
-  const upcomingEvents = allEvents
-    .filter(event => !event.isToday)
-    .sort((a, b) => {
-      // Parse dates for proper chronological sorting
-      const parseEventDate = (dateStr: string) => {
-        // Handle various date formats
-        const date = new Date(dateStr);
-        return isNaN(date.getTime()) ? new Date('2099-12-31') : date; // Put unparseable dates at end
-      };
-      
-      const dateA = parseEventDate(a.date || '');
-      const dateB = parseEventDate(b.date || '');
-      
-      return dateA.getTime() - dateB.getTime();
-    })
-    .slice(0, 8); // Show first 8 chronologically sorted events
-  
-  console.log('Today\'s events:', todaysEvents);
-  console.log('Upcoming events:', upcomingEvents);
+  // Format events for display
+  const todaysEvents = todaysEventsData.map(formatEventForCard);
+  const upcomingEvents = upcomingEventsData.map(formatEventForCard).slice(0, 8);
   
   return (
     <div className="min-h-screen bg-background">
@@ -62,7 +33,19 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* Today's Events */}
             <section>
-              {todaysEvents.length > 0 ? (
+              {isLoadingToday ? (
+                <div className="space-y-4">
+                  {[1, 2].map((i) => (
+                    <Card key={i}>
+                      <CardContent className="p-6">
+                        <Skeleton className="h-6 w-3/4 mb-2" />
+                        <Skeleton className="h-4 w-1/2 mb-4" />
+                        <Skeleton className="h-4 w-full" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : todaysEvents.length > 0 ? (
                 <div className="space-y-4">
                   {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
                 </div>
@@ -92,13 +75,14 @@ const Index = () => {
                 Coming Up Soon
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                {isLoadingVenueEvents && (
+                {isLoadingUpcoming ? (
                   <>
                     <div className="animate-pulse bulletin-card h-32 bg-muted/50 rounded-lg" />
                     <div className="animate-pulse bulletin-card h-32 bg-muted/50 rounded-lg" />
                   </>
+                ) : (
+                  upcomingEvents.map(event => <EventCard key={event.id} event={event} compact />)
                 )}
-                {upcomingEvents.map(event => <EventCard key={event.id} event={event} compact />)}
               </div>
               {upcomingEvents.length > 0 && (
                 <div className="text-center mt-6">
