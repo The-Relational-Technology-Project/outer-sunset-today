@@ -112,13 +112,37 @@ export default function Submit() {
     setImagePreview(null);
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Message sent!",
-      description: "We'll get back to you about recurring events or calendar integration.",
-    });
-    setContactForm({ name: "", email: "", message: "" });
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('contact_submissions')
+        .insert({
+          name: contactForm.name,
+          email: contactForm.email,
+          message: contactForm.message,
+          submission_type: 'recurring_event',
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Message sent!",
+        description: "We'll get back to you about recurring events or calendar integration.",
+      });
+      setContactForm({ name: "", email: "", message: "" });
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      toast({
+        title: "Error sending message",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -366,9 +390,9 @@ export default function Submit() {
                 />
               </div>
 
-              <Button type="submit" variant="outline" className="w-full">
+              <Button type="submit" variant="outline" className="w-full" disabled={isSubmitting}>
                 <Mail className="h-4 w-4 mr-2" />
-                Get In Touch
+                {isSubmitting ? "Sending..." : "Get In Touch"}
               </Button>
             </form>
           </CardContent>
