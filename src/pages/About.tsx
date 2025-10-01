@@ -83,90 +83,42 @@ export default function About() {
           </Card>
         </div>
 
-        <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 mb-12">
-          <Card>
-            <CardHeader>
-              <CardTitle>Get Involved</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Want to help make Outer Sunset Today even better? We're always looking for neighbors who want to:
-              </p>
-              <ul className="space-y-2 text-muted-foreground">
-                <li className="flex items-start">
-                  <span className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  Scout and share upcoming events
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 bg-coral rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  Help curate and verify event details
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 bg-secondary rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  Spread the word about community happenings
-                </li>
-                <li className="flex items-start">
-                  <span className="w-2 h-2 bg-accent rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  Connect local businesses with neighbors
-                </li>
-              </ul>
-              <div className="pt-4">
-                <Button className="bg-primary hover:bg-primary/90" asChild>
-                  <a href="mailto:hello@outersunset.today">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Get in Touch
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Outer Sunset Weekly</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Get a thoughtful weekly digest of what's coming up in the neighborhood. 
-                No spam, just the good stuff — delivered to your inbox every Sunday.
-              </p>
-              <form onSubmit={handleNewsletterSignup} className="space-y-3">
-                <div>
-                  <Label htmlFor="newsletter-email" className="sr-only">
-                    Email address
-                  </Label>
-                  <Input
-                    id="newsletter-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full bg-coral hover:bg-coral/90 text-coral-foreground"
-                >
-                  Sign Up for Weekly Digest
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="text-center">
-          <p className="text-muted-foreground">
-            Questions, ideas, or just want to say hi?{" "}
-            <a 
-              href="mailto:hello@outersunset.today" 
-              className="text-primary hover:underline font-medium"
-            >
-              Reach out anytime
-            </a>
-            . We're neighbors too!
-          </p>
-        </div>
+        <Card className="mb-12">
+          <CardHeader>
+            <CardTitle>Get Involved</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              Want to help make Outer Sunset Today even better? We're always looking for neighbors who want to:
+            </p>
+            <ul className="space-y-2 text-muted-foreground">
+              <li className="flex items-start">
+                <span className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                Scout and share upcoming events
+              </li>
+              <li className="flex items-start">
+                <span className="w-2 h-2 bg-coral rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                Help curate and verify event details
+              </li>
+              <li className="flex items-start">
+                <span className="w-2 h-2 bg-secondary rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                Spread the word about community happenings
+              </li>
+              <li className="flex items-start">
+                <span className="w-2 h-2 bg-accent rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                Connect local businesses with neighbors
+              </li>
+            </ul>
+            <div className="pt-4">
+              <Button className="bg-primary hover:bg-primary/90" asChild>
+                <a href="mailto:hello@outersunset.today">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Get in Touch
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

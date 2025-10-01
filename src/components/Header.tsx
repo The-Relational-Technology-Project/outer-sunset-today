@@ -7,10 +7,10 @@ export function Header() {
   const { planEvents } = useMyPlan();
   return (
     <header className="bg-card border-b border-border">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex flex-col items-start">
-            <div className="text-xl sm:text-2xl font-bold text-foreground font-bulletin">
+            <div className="text-2xl sm:text-4xl font-bold text-foreground font-bulletin">
               outer sunset today
             </div>
             <div className="text-sm text-muted-foreground font-handwritten">
@@ -18,14 +18,11 @@ export function Header() {
             </div>
           </Link>
           
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/calendar" className="text-foreground hover:text-primary transition-colors">
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link to="/calendar" className="text-foreground hover:text-primary transition-colors text-lg">
               Calendar
             </Link>
-            <Link to="/map" className="text-foreground hover:text-primary transition-colors">
-              Map
-            </Link>
-            <Link to="/about" className="text-foreground hover:text-primary transition-colors">
+            <Link to="/about" className="text-foreground hover:text-primary transition-colors text-lg">
               About
             </Link>
           </nav>

@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Upload, Calendar, Mail, MessageCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Submit() {
   const [basicForm, setBasicForm] = useState({
@@ -17,8 +19,11 @@ export default function Submit() {
     time: "",
     location: "",
     description: "",
-    email: ""
+    email: "",
+    eventType: "community"
   });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -29,13 +34,64 @@ export default function Submit() {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const handleBasicSubmit = (e: React.FormEvent) => {
+  const handleBasicSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Event submitted!",
-      description: "Thank you! We'll review and add your event soon.",
-    });
-    setBasicForm({ title: "", date: "", time: "", location: "", description: "", email: "" });
+    setIsSubmitting(true);
+
+    try {
+      // Combine date and time into start_time
+      const startTime = new Date(`${basicForm.date}T${basicForm.time}`);
+      
+      // Insert event into database
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .insert({
+          title: basicForm.title,
+          location: basicForm.location,
+          event_date: basicForm.date,
+          start_time: startTime.toISOString(),
+          description: basicForm.description,
+          event_type: basicForm.eventType,
+        })
+        .select()
+        .single();
+
+      if (eventError) throw eventError;
+
+      // Store submitter email separately
+      const { error: submissionError } = await supabase
+        .from('event_submissions')
+        .insert({
+          event_id: eventData.id,
+          submitter_email: basicForm.email,
+        });
+
+      if (submissionError) throw submissionError;
+
+      toast({
+        title: "Event submitted!",
+        description: "Thank you! Your event is now live on Outer Sunset Today.",
+      });
+      
+      setBasicForm({ 
+        title: "", 
+        date: "", 
+        time: "", 
+        location: "", 
+        description: "", 
+        email: "",
+        eventType: "community"
+      });
+    } catch (error) {
+      console.error('Error submitting event:', error);
+      toast({
+        title: "Error submitting event",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleImageSubmit = (e: React.FormEvent) => {
@@ -221,6 +277,28 @@ export default function Submit() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="eventType">Event Type</Label>
+                    <Select
+                      value={basicForm.eventType}
+                      onValueChange={(value) => setBasicForm(prev => ({ ...prev, eventType: value }))}
+                    >
+                      <SelectTrigger id="eventType">
+                        <SelectValue placeholder="Select event type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="community">Community</SelectItem>
+                        <SelectItem value="arts">Arts & Culture</SelectItem>
+                        <SelectItem value="food">Food & Drink</SelectItem>
+                        <SelectItem value="sports">Sports & Recreation</SelectItem>
+                        <SelectItem value="education">Education</SelectItem>
+                        <SelectItem value="family">Family & Kids</SelectItem>
+                        <SelectItem value="music">Music</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="email">Your Email</Label>
                     <Input
                       id="email"
@@ -232,8 +310,8 @@ export default function Submit() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full">
-                    Submit Event
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? "Submitting..." : "Submit Event"}
                   </Button>
                 </form>
               </CardContent>
