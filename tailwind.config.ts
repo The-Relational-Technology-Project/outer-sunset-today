@@ -19,8 +19,16 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'kalam': ['Kalam', 'cursive'],
-				'caveat': ['Caveat', 'cursive'],
+				'jakarta': ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+			},
+			fontSize: {
+				'base': ['1rem', { lineHeight: '1.6' }],
+				'lg': ['1.125rem', { lineHeight: '1.6' }],
+				'xl': ['1.25rem', { lineHeight: '1.5' }],
+				'2xl': ['1.5rem', { lineHeight: '1.4' }],
+				'3xl': ['1.875rem', { lineHeight: '1.3' }],
+				'4xl': ['2.25rem', { lineHeight: '1.2' }],
+				'5xl': ['3rem', { lineHeight: '1.1' }],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
