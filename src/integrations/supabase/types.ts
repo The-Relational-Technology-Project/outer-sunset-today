@@ -14,7 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_menus: {
+        Row: {
+          category: string
+          created_at: string
+          hours: string
+          id: string
+          location: string
+          menu_date: string
+          price: string | null
+          restaurant: string
+          special_item: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          hours: string
+          id?: string
+          location: string
+          menu_date: string
+          price?: string | null
+          restaurant: string
+          special_item: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          hours?: string
+          id?: string
+          location?: string
+          menu_date?: string
+          price?: string | null
+          restaurant?: string
+          special_item?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string | null
+          event_date: string
+          event_type: string
+          id: string
+          location: string
+          start_time: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          event_date: string
+          event_type: string
+          id?: string
+          location: string
+          start_time: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          location?: string
+          start_time?: string
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
