@@ -6,14 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { Trash2, Download, Share2, Calendar, Clock, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSurfCount } from "@/hooks/useSurfCount";
 
 export function MyPlanSidebar() {
   const { planEvents, removeFromPlan, updateEventNotes } = useMyPlan();
   const { toast } = useToast();
-  const [surfCount, setSurfCount] = React.useState(42);
+  const { surfCount, incrementSurfCount } = useSurfCount();
 
   const handleSurfClick = () => {
-    setSurfCount(prev => prev + 1);
+    incrementSurfCount();
   };
 
   const exportPlan = () => {
