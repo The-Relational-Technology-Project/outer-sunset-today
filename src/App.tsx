@@ -9,6 +9,7 @@ import Submit from "./pages/Submit";
 import About from "./pages/About";
 import PlanMyDay from "./pages/PlanMyDay";
 import Admin from "./pages/Admin";
+import PrivacyTerms from "./pages/PrivacyTerms";
 import NotFound from "./pages/NotFound";
 import { MyPlanProvider } from "./contexts/MyPlanContext";
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/my-plan" element={<PlanMyDay />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/privacy-terms" element={<PrivacyTerms />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
