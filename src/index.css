@@ -169,11 +169,11 @@
     @apply bg-card border border-border;
     box-shadow: var(--shadow-paper);
     transform: rotate(-0.5deg);
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .bulletin-card:hover {
-    transform: rotate(0deg) scale(1.02);
+    transform: rotate(0deg) scale(1.03) translateY(-4px);
     box-shadow: var(--shadow-sticker);
   }
 
@@ -181,8 +181,16 @@
     transform: rotate(0.8deg);
   }
 
+  .bulletin-card:nth-child(even):hover {
+    transform: rotate(0deg) scale(1.03) translateY(-4px);
+  }
+
   .bulletin-card:nth-child(3n) {
     transform: rotate(-0.8deg);
+  }
+
+  .bulletin-card:nth-child(3n):hover {
+    transform: rotate(0deg) scale(1.03) translateY(-4px);
   }
 
   /* Sticker-style buttons */
