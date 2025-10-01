@@ -19,7 +19,7 @@ const PrivacyTerms = () => {
                   Who we are
                 </h2>
                 <p className="text-muted-foreground">
-                  OuterSunsetToday.com is a project run by the people who live here.
+                  Outer Sunset Today is a project run by people who live in the Outer Sunset.
                 </p>
               </section>
 
