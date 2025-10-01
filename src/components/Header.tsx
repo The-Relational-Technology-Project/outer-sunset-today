@@ -28,7 +28,7 @@ export function Header() {
             </Button>
             
             {/* Submit an Event - Desktop Only */}
-            <Button size="sm" asChild className="hidden lg:inline-flex sticker-button bg-coral hover:bg-coral/90 text-coral-foreground">
+            <Button size="sm" asChild className="hidden lg:inline-flex rounded-full bg-coral hover:bg-coral/90 text-coral-foreground shadow-md px-4">
               <Link to="/submit">
                 <Plus className="h-4 w-4 mr-1" />
                 Submit an Event
