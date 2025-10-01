@@ -8,6 +8,7 @@ import Calendar from "./pages/Calendar";
 import Submit from "./pages/Submit";
 import About from "./pages/About";
 import PlanMyDay from "./pages/PlanMyDay";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { MyPlanProvider } from "./contexts/MyPlanContext";
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/submit" element={<Submit />} />
             <Route path="/about" element={<About />} />
             <Route path="/my-plan" element={<PlanMyDay />} />
+            <Route path="/admin" element={<Admin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

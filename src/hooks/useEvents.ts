@@ -20,6 +20,7 @@ export function useEvents() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
+        .eq('status', 'approved')
         .order('start_time', { ascending: true });
 
       if (error) throw error;
@@ -45,6 +46,7 @@ export function useTodaysEvents() {
         .from('events')
         .select('*')
         .eq('event_date', today)
+        .eq('status', 'approved')
         .order('start_time', { ascending: true });
 
       if (error) throw error;
@@ -67,6 +69,7 @@ export function useUpcomingEvents() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
+        .eq('status', 'approved')
         .gt('event_date', today)
         .order('start_time', { ascending: true })
         .limit(10);
