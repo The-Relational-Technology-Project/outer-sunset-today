@@ -19,14 +19,24 @@ export function Header() {
           </Link>
           
           <div className="flex items-center gap-2">
-            <Button size="sm" asChild className="sticker-button bg-coral hover:bg-coral/90 text-coral-foreground">
+            {/* My Plan - Mobile Only */}
+            <Button size="sm" asChild className="lg:hidden sticker-button bg-coral hover:bg-coral/90 text-coral-foreground">
               <Link to="/my-plan">
                 <Bookmark className="h-4 w-4" />
                 <span className="hidden xs:inline ml-1">My Plan</span>
               </Link>
             </Button>
             
-            <Button variant="outline" size="sm" asChild>
+            {/* Submit an Event - Desktop Only */}
+            <Button size="sm" asChild className="hidden lg:inline-flex bg-coral hover:bg-coral/90 text-coral-foreground">
+              <Link to="/submit">
+                <Plus className="h-4 w-4 mr-1" />
+                Submit an Event
+              </Link>
+            </Button>
+            
+            {/* Submit - Mobile Only */}
+            <Button variant="outline" size="sm" asChild className="lg:hidden">
               <Link to="/submit">
                 <Plus className="h-4 w-4" />
                 <span className="hidden xs:inline ml-1">Submit</span>
