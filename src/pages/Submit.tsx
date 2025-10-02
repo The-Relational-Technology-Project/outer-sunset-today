@@ -39,38 +39,24 @@ export default function Submit() {
     setIsSubmitting(true);
 
     try {
-      // Combine date and time into start_time
+      // Combine date and time into start_time (ISO string)
       const startTime = new Date(`${basicForm.date}T${basicForm.time}`);
-      
-      // Insert event into database
-      const { data: eventData, error: eventError } = await supabase
-        .from('events')
-        .insert({
+
+      // Call secure backend function to insert event and link submitter email
+      const { data, error } = await supabase.functions.invoke('submit-event', {
+        body: {
           title: basicForm.title,
           location: basicForm.location,
           event_date: basicForm.date,
           start_time: startTime.toISOString(),
           description: basicForm.description,
           event_type: basicForm.eventType,
-        })
-        .select('id');
+          submitter_email: basicForm.email,
+        },
+      });
 
-      if (eventError) throw eventError;
-
-      // Store submitter email separately
-      const eventId = eventData?.[0]?.id;
-      if (eventId) {
-        const { error: submissionError } = await supabase
-          .from('event_submissions')
-          .insert({
-            event_id: eventId,
-            submitter_email: basicForm.email,
-          });
-
-        if (submissionError) throw submissionError;
-      }
-
-      if (eventError) throw eventError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Event submitted!",
@@ -90,7 +76,7 @@ export default function Submit() {
       console.error('Error submitting event:', error);
       toast({
         title: "Error submitting event",
-        description: "Something went wrong. Please try again.",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
