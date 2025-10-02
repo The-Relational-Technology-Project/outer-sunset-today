@@ -18,6 +18,7 @@ serve(async (req) => {
 
   try {
     const { title, location, event_date, start_time, description, event_type, submitter_email } = await req.json();
+    console.log("submit-event payload:", { title, location, event_date, start_time, event_type });
 
     // Basic server-side validation
     if (
@@ -80,6 +81,7 @@ serve(async (req) => {
       }
     }
 
+    console.log("submit-event created eventId:", eventId);
     return new Response(JSON.stringify({ success: true, eventId }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },

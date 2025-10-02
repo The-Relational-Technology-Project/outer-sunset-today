@@ -42,7 +42,7 @@ export default function Submit() {
       // Combine date and time into start_time (ISO string)
       const startTime = new Date(`${basicForm.date}T${basicForm.time}`);
 
-      // Call secure backend function to insert event and link submitter email
+      console.log('Invoking submit-event function...');
       const { data, error } = await supabase.functions.invoke('submit-event', {
         body: {
           title: basicForm.title,
