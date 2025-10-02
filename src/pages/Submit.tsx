@@ -53,24 +53,28 @@ export default function Submit() {
           description: basicForm.description,
           event_type: basicForm.eventType,
         })
-        .select()
-        .single();
+        .select('id');
 
       if (eventError) throw eventError;
 
       // Store submitter email separately
-      const { error: submissionError } = await supabase
-        .from('event_submissions')
-        .insert({
-          event_id: eventData.id,
-          submitter_email: basicForm.email,
-        });
+      const eventId = eventData?.[0]?.id;
+      if (eventId) {
+        const { error: submissionError } = await supabase
+          .from('event_submissions')
+          .insert({
+            event_id: eventId,
+            submitter_email: basicForm.email,
+          });
 
-      if (submissionError) throw submissionError;
+        if (submissionError) throw submissionError;
+      }
+
+      if (eventError) throw eventError;
 
       toast({
         title: "Event submitted!",
-        description: "Thank you! Your event is now live on Outer Sunset Today.",
+        description: "Thank you! Your event will be reviewed and posted soon.",
       });
       
       setBasicForm({ 
