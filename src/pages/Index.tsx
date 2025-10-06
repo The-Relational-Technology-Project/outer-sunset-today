@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { TodaysMenus } from "@/components/TodaysMenus";
 import { MyPlanSidebar } from "@/components/MyPlanSidebar";
+import { FloatingMyPlanButton } from "@/components/FloatingMyPlanButton";
 import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WeatherWidget } from "@/components/WeatherWidget";
@@ -26,6 +27,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      <FloatingMyPlanButton />
       
       <main className="container mx-auto px-4 py-6">
         {/* Main Content Grid */}
