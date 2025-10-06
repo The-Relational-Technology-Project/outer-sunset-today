@@ -18,9 +18,10 @@ export function MyPlanSidebar() {
   };
 
   const exportPlan = () => {
-    const planText = planEvents.map(event => 
-      `${event.title}\n${event.time} - ${event.location}\n${event.description}\n${event.notes ? `Notes: ${event.notes}` : ''}\n---`
-    ).join('\n');
+    const planText = planEvents.map(event => {
+      const datePrefix = event.date ? `Date: ${event.date}\n` : '';
+      return `${event.title}\n${datePrefix}${event.time} - ${event.location}\n${event.description}\n${event.notes ? `Notes: ${event.notes}` : ''}\n---`;
+    }).join('\n');
     
     const blob = new Blob([planText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -37,9 +38,10 @@ export function MyPlanSidebar() {
   };
 
   const sharePlan = async () => {
-    const planText = planEvents.map(event => 
-      `${event.title} - ${event.time} at ${event.location}`
-    ).join('\n');
+    const planText = planEvents.map(event => {
+      const datePrefix = event.date ? `[${event.date}] ` : '';
+      return `${datePrefix}${event.title} - ${event.time} at ${event.location}`;
+    }).join('\n');
     
     if (navigator.share) {
       try {
