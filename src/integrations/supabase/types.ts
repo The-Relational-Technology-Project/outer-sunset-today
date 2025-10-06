@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      best_blue_days: {
+        Row: {
+          blue_date: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blue_date: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blue_date?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           created_at: string

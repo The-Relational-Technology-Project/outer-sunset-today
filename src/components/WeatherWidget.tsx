@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useWeather } from "@/hooks/useWeather";
-import { Cloud, CloudRain, Sun, CloudSnow, Wind } from "lucide-react";
+import { useBestBlueDay } from "@/hooks/useBestBlueDay";
+import { Cloud, CloudRain, Sun, CloudSnow, Wind, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const getWeatherIcon = (forecast: string) => {
@@ -22,6 +23,7 @@ const getWeatherIcon = (forecast: string) => {
 
 export const WeatherWidget = () => {
   const { data: weather, isLoading } = useWeather();
+  const { data: isBestBlueDay, isLoading: isLoadingBlueDay } = useBestBlueDay();
 
   if (isLoading) {
     return (
@@ -53,6 +55,22 @@ export const WeatherWidget = () => {
             <p className="text-xs text-muted-foreground font-handwritten">
               {weather.shortForecast}
             </p>
+            {isBestBlueDay && !isLoadingBlueDay && (
+              <div className="mt-2 pt-2 border-t border-cork">
+                <p className="text-xs font-bold text-primary font-bulletin flex items-center gap-1">
+                  Best Blue Score!
+                  <a 
+                    href="https://sfsunset.today/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-0.5"
+                  >
+                    (more info)
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
