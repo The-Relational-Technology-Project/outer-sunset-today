@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.submit-event]
 verify_jwt = false
+
+[functions.scan-event-flyer]
+verify_jwt = false

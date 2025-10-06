@@ -33,6 +33,7 @@ export default function Submit() {
 
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [quickEmail, setQuickEmail] = useState("");
 
   const handleBasicSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +85,7 @@ export default function Submit() {
     }
   };
 
-  const handleImageSubmit = (e: React.FormEvent) => {
+  const handleImageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadedImage) {
       toast({
@@ -94,12 +95,49 @@ export default function Submit() {
       });
       return;
     }
-    toast({
-      title: "Event submitted!",
-      description: "Thanks for the flyer! We'll extract the details and add your event soon.",
-    });
-    setUploadedImage(null);
-    setImagePreview(null);
+
+    setIsSubmitting(true);
+
+    try {
+      // Convert image to base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(uploadedImage);
+      });
+
+      const imageBase64 = await base64Promise;
+
+      console.log('Sending flyer to AI for scanning...');
+      const { data, error } = await supabase.functions.invoke('scan-event-flyer', {
+        body: {
+          imageBase64,
+          submitterEmail: quickEmail
+        }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Event submitted!",
+        description: `AI extracted: "${data.event.title}". Your event will be reviewed and posted soon!`,
+      });
+
+      setUploadedImage(null);
+      setImagePreview(null);
+      setQuickEmail("");
+    } catch (error) {
+      console.error('Error scanning flyer:', error);
+      toast({
+        title: "Error processing flyer",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try the detailed form instead.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
@@ -210,13 +248,15 @@ export default function Submit() {
                     <Input
                       id="quick-email"
                       type="email"
+                      value={quickEmail}
+                      onChange={(e) => setQuickEmail(e.target.value)}
                       placeholder="your@email.com"
                       required
                     />
                   </div>
 
-                  <Button type="submit" className="w-full">
-                    Submit Event Flyer
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? "Scanning flyer..." : "Submit Event Flyer"}
                   </Button>
                 </form>
               </CardContent>
