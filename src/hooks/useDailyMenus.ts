@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export interface DailyMenu {
   id: string;
@@ -16,7 +17,7 @@ export function useTodaysMenus() {
   return useQuery({
     queryKey: ['daily_menus', 'today'],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatInTimeZone(new Date(), 'America/Los_Angeles', 'yyyy-MM-dd');
       
       const { data, error } = await supabase
         .from('daily_menus')

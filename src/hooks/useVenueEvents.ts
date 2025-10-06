@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchVenueEvents, VenueEvent } from '@/utils/csvParser';
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface UseVenueEventsOptions {
   csvUrl: string;
@@ -18,12 +19,9 @@ export function useVenueEvents({ csvUrl, venueName, enabled = true }: UseVenueEv
 }
 
 export function formatVenueEventForCard(event: VenueEvent) {
-  const isToday = event.startTime.toDateString() === new Date().toDateString();
-  console.log(`Checking if ${event.title} is today:`, {
-    eventDate: event.startTime.toDateString(),
-    todayDate: new Date().toDateString(),
-    isToday
-  });
+  const todayPacific = formatInTimeZone(new Date(), 'America/Los_Angeles', 'yyyy-MM-dd');
+  const eventDatePacific = formatInTimeZone(event.startTime, 'America/Los_Angeles', 'yyyy-MM-dd');
+  const isToday = eventDatePacific === todayPacific;
   
   return {
     id: event.id,

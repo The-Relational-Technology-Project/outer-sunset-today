@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatInTimeZone } from 'date-fns-tz';
 
 export function useSurfCount() {
   const queryClient = useQueryClient();
@@ -8,7 +9,7 @@ export function useSurfCount() {
   const { data: surfCount = 0, isLoading } = useQuery({
     queryKey: ["surf-count"],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatInTimeZone(new Date(), 'America/Los_Angeles', 'yyyy-MM-dd');
       
       const { data, error } = await supabase
         .from("surf_counts")
