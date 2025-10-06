@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { Upload, Calendar, Mail, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { HumanVerification } from "@/components/HumanVerification";
 
 export default function Submit() {
   const [basicForm, setBasicForm] = useState({
@@ -34,6 +35,11 @@ export default function Submit() {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [quickEmail, setQuickEmail] = useState("");
+  
+  const [quickVerified, setQuickVerified] = useState(false);
+  const [detailsVerified, setDetailsVerified] = useState(false);
+  const [contactVerified, setContactVerified] = useState(false);
+  const [verificationReset, setVerificationReset] = useState(0);
 
   const handleBasicSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +79,8 @@ export default function Submit() {
         email: "",
         eventType: "community"
       });
+      setDetailsVerified(false);
+      setVerificationReset(prev => prev + 1);
     } catch (error) {
       console.error('Error submitting event:', error);
       toast({
@@ -128,6 +136,8 @@ export default function Submit() {
       setUploadedImage(null);
       setImagePreview(null);
       setQuickEmail("");
+      setQuickVerified(false);
+      setVerificationReset(prev => prev + 1);
     } catch (error) {
       console.error('Error scanning flyer:', error);
       toast({
@@ -161,6 +171,8 @@ export default function Submit() {
         description: "We'll get back to you about recurring events or calendar integration.",
       });
       setContactForm({ name: "", email: "", message: "" });
+      setContactVerified(false);
+      setVerificationReset(prev => prev + 1);
     } catch (error) {
       console.error('Error submitting contact form:', error);
       toast({
@@ -255,7 +267,12 @@ export default function Submit() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  <HumanVerification 
+                    onVerified={setQuickVerified}
+                    resetTrigger={verificationReset}
+                  />
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting || !quickVerified}>
                     {isSubmitting ? "Scanning flyer..." : "Submit Event Flyer"}
                   </Button>
                 </form>
@@ -364,7 +381,12 @@ export default function Submit() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  <HumanVerification 
+                    onVerified={setDetailsVerified}
+                    resetTrigger={verificationReset}
+                  />
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting || !detailsVerified}>
                     {isSubmitting ? "Submitting..." : "Submit Event"}
                   </Button>
                 </form>
@@ -420,7 +442,12 @@ export default function Submit() {
                 />
               </div>
 
-              <Button type="submit" variant="outline" className="w-full" disabled={isSubmitting}>
+              <HumanVerification 
+                onVerified={setContactVerified}
+                resetTrigger={verificationReset}
+              />
+
+              <Button type="submit" variant="outline" className="w-full" disabled={isSubmitting || !contactVerified}>
                 <Mail className="h-4 w-4 mr-2" />
                 {isSubmitting ? "Sending..." : "Get In Touch"}
               </Button>
