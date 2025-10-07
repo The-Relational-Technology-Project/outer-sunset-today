@@ -6,12 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { Filter } from "lucide-react";
 import { useEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatInTimeZone } from "date-fns-tz";
 
 export default function Calendar() {
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   
   const { data: eventsData = [], isLoading } = useEvents();
-  const allEvents = eventsData.map(formatEventForCard);
+  const today = formatInTimeZone(new Date(), 'America/Los_Angeles', 'yyyy-MM-dd');
+  
+  // Filter to only show today and future events
+  const todayAndFutureEvents = eventsData.filter(event => event.event_date >= today);
+  const allEvents = todayAndFutureEvents.map(formatEventForCard);
   
   const filters = [
     { id: "all", label: "All Events" },
