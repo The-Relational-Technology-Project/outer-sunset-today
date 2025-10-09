@@ -12,14 +12,57 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, submitterEmail } = await req.json();
+    const { submission_id } = await req.json();
 
-    if (!imageBase64) {
+    if (!submission_id) {
       return new Response(
-        JSON.stringify({ error: 'Image data is required' }),
+        JSON.stringify({ error: 'Submission ID is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Processing flyer submission:', submission_id);
+
+    // Get submission details
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: submission, error: fetchError } = await supabaseAdmin
+      .from('flyer_submissions')
+      .select('*')
+      .eq('id', submission_id)
+      .single();
+
+    if (fetchError || !submission) {
+      return new Response(
+        JSON.stringify({ error: 'Submission not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (submission.processed) {
+      return new Response(
+        JSON.stringify({ error: 'Submission already processed' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Download the image from storage
+    const { data: imageData, error: downloadError } = await supabaseAdmin.storage
+      .from('event-flyers')
+      .download(submission.storage_path);
+
+    if (downloadError || !imageData) {
+      throw new Error('Failed to download image from storage');
+    }
+
+    // Convert blob to base64
+    const arrayBuffer = await imageData.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const mimeType = imageData.type || 'image/jpeg';
+    const imageBase64 = `data:${mimeType};base64,${base64}`;
 
     console.log('Scanning event flyer with AI...');
 
@@ -122,12 +165,6 @@ serve(async (req) => {
       endDateTime = new Date(`${eventDetails.event_date}T${eventDetails.end_time}`);
     }
 
-    // Insert into database using service role
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     const { data: event, error: eventError } = await supabaseAdmin
       .from('events')
       .insert({
@@ -148,15 +185,15 @@ serve(async (req) => {
       throw eventError;
     }
 
-    // Record the submission if email provided
-    if (submitterEmail && event) {
-      await supabaseAdmin
-        .from('event_submissions')
-        .insert({
-          event_id: event.id,
-          submitter_email: submitterEmail
-        });
-    }
+    // Update the submission as processed
+    await supabaseAdmin
+      .from('flyer_submissions')
+      .update({
+        processed: true,
+        event_id: event.id,
+        processing_notes: `Successfully extracted: ${eventDetails.title}`
+      })
+      .eq('id', submission_id);
 
     console.log('Event created:', event);
 

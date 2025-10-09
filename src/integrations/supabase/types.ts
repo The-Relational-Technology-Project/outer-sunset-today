@@ -163,6 +163,44 @@ export type Database = {
         }
         Relationships: []
       }
+      flyer_submissions: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          processed: boolean
+          processing_notes: string | null
+          storage_path: string
+          submitter_email: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          processed?: boolean
+          processing_notes?: string | null
+          storage_path: string
+          submitter_email?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          processed?: boolean
+          processing_notes?: string | null
+          storage_path?: string
+          submitter_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flyer_submissions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       surf_counts: {
         Row: {
           count: number

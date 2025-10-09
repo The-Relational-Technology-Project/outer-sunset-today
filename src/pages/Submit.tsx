@@ -107,30 +107,36 @@ export default function Submit() {
     setIsSubmitting(true);
 
     try {
-      // Convert image to base64
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(uploadedImage);
-      });
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const filename = `${timestamp}-${uploadedImage.name}`;
+      const filePath = `${filename}`;
 
-      const imageBase64 = await base64Promise;
+      console.log('Uploading flyer to storage...');
+      
+      // Upload the image to storage
+      const { error: uploadError } = await supabase.storage
+        .from('event-flyers')
+        .upload(filePath, uploadedImage, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      console.log('Sending flyer to AI for scanning...');
-      const { data, error } = await supabase.functions.invoke('scan-event-flyer', {
-        body: {
-          imageBase64,
-          submitterEmail: quickEmail
-        }
-      });
+      if (uploadError) throw uploadError;
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // Create a record in flyer_submissions
+      const { error: dbError } = await supabase
+        .from('flyer_submissions')
+        .insert({
+          storage_path: filePath,
+          submitter_email: quickEmail || null
+        });
+
+      if (dbError) throw dbError;
 
       toast({
-        title: "Event submitted!",
-        description: `AI extracted: "${data.event.title}". Your event will be reviewed and posted soon!`,
+        title: "Flyer uploaded!",
+        description: "Thank you! Your event flyer has been submitted and will be reviewed soon.",
       });
 
       setUploadedImage(null);
@@ -139,10 +145,10 @@ export default function Submit() {
       setQuickVerified(false);
       setVerificationReset(prev => prev + 1);
     } catch (error) {
-      console.error('Error scanning flyer:', error);
+      console.error('Error uploading flyer:', error);
       toast({
-        title: "Error processing flyer",
-        description: error instanceof Error ? error.message : "Something went wrong. Please try the detailed form instead.",
+        title: "Error uploading flyer",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -223,7 +229,7 @@ export default function Submit() {
                   Upload Event Flyer
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Got a flyer or screenshot? Upload it and we'll extract the details for you.
+                  Got a flyer or screenshot? Upload it and we'll review it to add your event.
                 </p>
               </CardHeader>
               <CardContent>
@@ -256,14 +262,13 @@ export default function Submit() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="quick-email">Your Email</Label>
+                    <Label htmlFor="quick-email">Your Email (Optional)</Label>
                     <Input
                       id="quick-email"
                       type="email"
                       value={quickEmail}
                       onChange={(e) => setQuickEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      required
+                      placeholder="your@email.com (in case we have questions)"
                     />
                   </div>
 
@@ -273,7 +278,7 @@ export default function Submit() {
                   />
 
                   <Button type="submit" className="w-full" disabled={isSubmitting || !quickVerified}>
-                    {isSubmitting ? "Scanning flyer..." : "Submit Event Flyer"}
+                    {isSubmitting ? "Uploading flyer..." : "Submit Event Flyer"}
                   </Button>
                 </form>
               </CardContent>
