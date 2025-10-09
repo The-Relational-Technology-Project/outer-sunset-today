@@ -36,8 +36,10 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-8">
             {/* Today's Events */}
             <section>
+              <WeatherWidget />
+              
               {isLoadingToday ? (
-                <div className="space-y-4">
+                <div className="space-y-4 mt-4">
                   {[1, 2].map((i) => (
                     <Card key={i}>
                       <CardContent className="p-6">
@@ -49,11 +51,11 @@ const Index = () => {
                   ))}
                 </div>
               ) : todaysEvents.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-4 mt-4">
                   {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
                 </div>
               ) : (
-                <Card>
+                <Card className="mt-4">
                   <CardContent className="p-8 text-center">
                     <p className="text-muted-foreground mb-4">
                       No events scheduled for today. Check back tomorrow or add something yourself!
@@ -100,8 +102,7 @@ const Index = () => {
           </div>
 
           {/* Right Side - My Plan (Desktop only) */}
-          <div className="hidden lg:block space-y-4">
-            <WeatherWidget />
+          <div className="hidden lg:block">
             <MyPlanSidebar />
           </div>
         </div>
