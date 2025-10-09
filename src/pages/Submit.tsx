@@ -107,14 +107,14 @@ export default function Submit() {
     setIsSubmitting(true);
 
     try {
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const filename = `${timestamp}-${uploadedImage.name}`;
-      const filePath = `${filename}`;
+      // Generate unique filename
+      const fileExt = uploadedImage.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${fileName}`;
 
       console.log('Uploading flyer to storage...');
       
-      // Upload the image to storage
+      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('event-flyers')
         .upload(filePath, uploadedImage, {
@@ -122,9 +122,14 @@ export default function Submit() {
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
-      // Create a record in flyer_submissions
+      console.log('Flyer uploaded successfully, recording submission...');
+
+      // Record the submission in the database
       const { error: dbError } = await supabase
         .from('flyer_submissions')
         .insert({
@@ -132,11 +137,14 @@ export default function Submit() {
           submitter_email: quickEmail || null
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw dbError;
+      }
 
       toast({
         title: "Flyer uploaded!",
-        description: "Thank you! Your event flyer has been submitted and will be reviewed soon.",
+        description: "Thank you! We'll review your flyer and add the event soon.",
       });
 
       setUploadedImage(null);
@@ -148,7 +156,7 @@ export default function Submit() {
       console.error('Error uploading flyer:', error);
       toast({
         title: "Error uploading flyer",
-        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try the detailed form instead.",
         variant: "destructive",
       });
     } finally {
@@ -229,7 +237,7 @@ export default function Submit() {
                   Upload Event Flyer
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Got a flyer or screenshot? Upload it and we'll review it to add your event.
+                  Got a flyer or screenshot? Upload it and we'll extract the details and add your event.
                 </p>
               </CardHeader>
               <CardContent>
@@ -262,7 +270,7 @@ export default function Submit() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="quick-email">Your Email (Optional)</Label>
+                    <Label htmlFor="quick-email">Your Email (optional)</Label>
                     <Input
                       id="quick-email"
                       type="email"
@@ -278,7 +286,7 @@ export default function Submit() {
                   />
 
                   <Button type="submit" className="w-full" disabled={isSubmitting || !quickVerified}>
-                    {isSubmitting ? "Uploading flyer..." : "Submit Event Flyer"}
+                    {isSubmitting ? "Uploading flyer..." : "Upload Event Flyer"}
                   </Button>
                 </form>
               </CardContent>
