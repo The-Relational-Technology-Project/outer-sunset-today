@@ -77,16 +77,9 @@ export function TodaysMenus() {
               <p className="text-foreground font-medium mb-2">
                 {menu.special_item}
               </p>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center">
-                  <Clock className="h-3 w-3 mr-1" />
-                  {menu.hours}
-                </div>
-                {menu.price && (
-                  <span className="font-medium text-foreground">
-                    {menu.price}
-                  </span>
-                )}
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Clock className="h-3 w-3 mr-1" />
+                {menu.hours}
               </div>
             </CardContent>
           </Card>
