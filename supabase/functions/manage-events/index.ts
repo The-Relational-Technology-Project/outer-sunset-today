@@ -41,7 +41,23 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      result = { events };
+      // Get flyer submissions
+      const { data: flyers, error: flyersError } = await supabase
+        .from('flyer_submissions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (flyersError) console.error('Error fetching flyers:', flyersError);
+
+      // Get contact submissions
+      const { data: contacts, error: contactsError } = await supabase
+        .from('contact_submissions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (contactsError) console.error('Error fetching contacts:', contactsError);
+
+      result = { events, flyers: flyers || [], contacts: contacts || [] };
     } else if (action === 'approve' || action === 'reject') {
       // Update event status
       const newStatus = action === 'approve' ? 'approved' : 'rejected';

@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useFlyerSubmissions, getFlyerImageUrl } from "@/hooks/useFlyerSubmissions";
-import { useContactSubmissions } from "@/hooks/useContactSubmissions";
+import { getFlyerImageUrl, type FlyerSubmission } from "@/hooks/useFlyerSubmissions";
+import { type ContactSubmission } from "@/hooks/useContactSubmissions";
 import { CheckCircle, XCircle, Lock, Image as ImageIcon, Mail } from "lucide-react";
 
 interface PendingEvent {
@@ -27,11 +27,11 @@ export default function Admin() {
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pendingEvents, setPendingEvents] = useState<PendingEvent[]>([]);
+  const [flyerSubmissions, setFlyerSubmissions] = useState<FlyerSubmission[]>([]);
+  const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [flyerImageUrls, setFlyerImageUrls] = useState<Record<string, string>>({});
   const { toast } = useToast();
-  const { data: flyerSubmissions = [], isLoading: flyersLoading } = useFlyerSubmissions();
-  const { data: contactSubmissions = [], isLoading: contactsLoading } = useContactSubmissions();
 
   useEffect(() => {
     // Check if already authenticated
@@ -72,8 +72,11 @@ export default function Admin() {
       if (error) throw error;
 
       sessionStorage.setItem("admin_auth", "true");
+      sessionStorage.setItem("admin_password", password);
       setIsAuthenticated(true);
       setPendingEvents(data.events || []);
+      setFlyerSubmissions(data.flyers || []);
+      setContactSubmissions(data.contacts || []);
       
       toast({
         title: "Login successful",
@@ -93,12 +96,15 @@ export default function Admin() {
   const loadPendingEvents = async () => {
     setIsLoading(true);
     try {
+      const storedPassword = sessionStorage.getItem("admin_password") || password;
       const { data, error } = await supabase.functions.invoke('manage-events', {
-        body: { action: 'list', password }
+        body: { action: 'list', password: storedPassword }
       });
 
       if (error) throw error;
       setPendingEvents(data.events || []);
+      setFlyerSubmissions(data.flyers || []);
+      setContactSubmissions(data.contacts || []);
     } catch (error: any) {
       toast({
         title: "Error loading events",
@@ -113,8 +119,9 @@ export default function Admin() {
   const handleAction = async (eventId: string, action: 'approve' | 'reject') => {
     setIsLoading(true);
     try {
+      const storedPassword = sessionStorage.getItem("admin_password") || password;
       const { error } = await supabase.functions.invoke('manage-events', {
-        body: { action, eventId, password }
+        body: { action, eventId, password: storedPassword }
       });
 
       if (error) throw error;
@@ -139,6 +146,7 @@ export default function Admin() {
 
   const handleLogout = () => {
     sessionStorage.removeItem("admin_auth");
+    sessionStorage.removeItem("admin_password");
     setIsAuthenticated(false);
     setPassword("");
     setPendingEvents([]);
@@ -292,7 +300,7 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="flyers" className="mt-6">
-            {flyersLoading ? (
+            {isLoading && flyerSubmissions.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Loading flyers...</p>
             ) : flyerSubmissions.length === 0 ? (
               <Card>
@@ -338,7 +346,7 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="contacts" className="mt-6">
-            {contactsLoading ? (
+            {isLoading && contactSubmissions.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Loading messages...</p>
             ) : contactSubmissions.length === 0 ? (
               <Card>
