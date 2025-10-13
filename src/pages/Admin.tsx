@@ -42,20 +42,16 @@ export default function Admin() {
     }
   }, []);
 
-  // Load flyer image URLs
+  // Extract image URLs from flyer submissions
   useEffect(() => {
     if (isAuthenticated && flyerSubmissions.length > 0) {
-      const loadImages = async () => {
-        const urls: Record<string, string> = {};
-        for (const submission of flyerSubmissions) {
-          const url = await getFlyerImageUrl(submission.storage_path);
-          if (url) {
-            urls[submission.id] = url;
-          }
+      const urls: Record<string, string> = {};
+      flyerSubmissions.forEach((submission: any) => {
+        if (submission.imageUrl) {
+          urls[submission.id] = submission.imageUrl;
         }
-        setFlyerImageUrls(urls);
-      };
-      loadImages();
+      });
+      setFlyerImageUrls(urls);
     }
   }, [isAuthenticated, flyerSubmissions]);
 

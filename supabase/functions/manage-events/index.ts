@@ -49,6 +49,25 @@ serve(async (req) => {
 
       if (flyersError) console.error('Error fetching flyers:', flyersError);
 
+      // Generate signed URLs for flyer images
+      const flyersWithUrls = await Promise.all(
+        (flyers || []).map(async (flyer) => {
+          try {
+            const { data: signedUrlData } = await supabase.storage
+              .from('event-flyers')
+              .createSignedUrl(flyer.storage_path, 3600);
+            
+            return {
+              ...flyer,
+              imageUrl: signedUrlData?.signedUrl || null
+            };
+          } catch (error) {
+            console.error('Error generating signed URL for flyer:', flyer.id, error);
+            return { ...flyer, imageUrl: null };
+          }
+        })
+      );
+
       // Get contact submissions
       const { data: contacts, error: contactsError } = await supabase
         .from('contact_submissions')
@@ -57,7 +76,7 @@ serve(async (req) => {
 
       if (contactsError) console.error('Error fetching contacts:', contactsError);
 
-      result = { events, flyers: flyers || [], contacts: contacts || [] };
+      result = { events, flyers: flyersWithUrls, contacts: contacts || [] };
     } else if (action === 'approve' || action === 'reject') {
       // Update event status
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
