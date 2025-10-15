@@ -26,12 +26,18 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
   const vibeTag = getVibeTag(event);
   
   const handleAddToPlan = () => {
+    const isMobile = window.innerWidth < 768;
+    
     if (isInPlan(event.id)) {
       removeFromPlan(event.id);
-      toast.success("Removed from My Plan");
+      if (!isMobile) {
+        toast.success("Removed from My Plan");
+      }
     } else {
       addToPlan(event);
-      toast.success("Added to My Plan");
+      if (!isMobile) {
+        toast.success("Added to My Plan");
+      }
     }
   };
   const categoryColors = {
