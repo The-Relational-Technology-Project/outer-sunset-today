@@ -31,28 +31,30 @@ const PlanMyDay = () => {
 
   const sharePlan = async () => {
     const planText = planEvents.map(event => {
-      const notes = event.notes ? ` (${event.notes})` : '';
-      return `${event.title} - ${event.time} at ${event.location}${notes}`;
+      const dateStr = event.date || '';
+      return `${dateStr} - ${event.title} - ${event.time} and ${event.location}`;
     }).join('\n');
+
+    const fullText = `My plan:\n${planText}\n~ via outersunset.today ~`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'My Outer Sunset Plan',
-          text: `Check out my plan for the Outer Sunset:\n\n${planText}`,
+          title: 'My plan',
+          text: fullText,
         });
         toast.success("Plan shared!");
       } catch (error) {
         // Fall back to clipboard
-        fallbackShare(planText);
+        fallbackShare(fullText);
       }
     } else {
-      fallbackShare(planText);
+      fallbackShare(fullText);
     }
   };
 
   const fallbackShare = (planText: string) => {
-    navigator.clipboard.writeText(`My Outer Sunset Plan:\n\n${planText}`);
+    navigator.clipboard.writeText(planText);
     toast.success("Plan copied to clipboard!");
   };
 

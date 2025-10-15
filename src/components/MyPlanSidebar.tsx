@@ -39,21 +39,23 @@ export function MyPlanSidebar() {
 
   const sharePlan = async () => {
     const planText = planEvents.map(event => {
-      const datePrefix = event.date ? `[${event.date}] ` : '';
-      return `${datePrefix}${event.title} - ${event.time} at ${event.location}`;
+      const datePrefix = event.date ? `${event.date}` : '';
+      return `${datePrefix} - ${event.title} - ${event.time} and ${event.location}`;
     }).join('\n');
+    
+    const fullText = `My plan:\n${planText}\n~ via outersunset.today ~`;
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'My Outer Sunset Plan',
-          text: planText,
+          title: 'My plan',
+          text: fullText,
         });
       } catch (err) {
-        fallbackShare(planText);
+        fallbackShare(fullText);
       }
     } else {
-      fallbackShare(planText);
+      fallbackShare(fullText);
     }
   };
 
