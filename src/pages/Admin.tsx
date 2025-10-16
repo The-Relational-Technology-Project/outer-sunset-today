@@ -56,6 +56,10 @@ export default function Admin() {
         const urls: Record<string, string> = {};
         await Promise.all(
           flyerSubmissions.map(async (submission: any) => {
+            if (submission.imageUrl) {
+              urls[submission.id] = submission.imageUrl;
+              return;
+            }
             if (submission.storage_path) {
               const url = await getFlyerImageUrl(submission.storage_path);
               if (url) urls[submission.id] = url;
