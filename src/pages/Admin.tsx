@@ -9,7 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getFlyerImageUrl, type FlyerSubmission } from "@/hooks/useFlyerSubmissions";
 import { type ContactSubmission } from "@/hooks/useContactSubmissions";
-import { CheckCircle, XCircle, Lock, Image as ImageIcon, Mail } from "lucide-react";
+import { CheckCircle, XCircle, Lock, Image as ImageIcon, Mail, Archive, Sparkles, Eye } from "lucide-react";
+import { FlyerImageDialog } from "@/components/FlyerImageDialog";
+import { EventConfirmationDialog } from "@/components/EventConfirmationDialog";
 
 interface PendingEvent {
   id: string;
@@ -31,6 +33,11 @@ export default function Admin() {
   const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [flyerImageUrls, setFlyerImageUrls] = useState<Record<string, string>>({});
+  const [selectedFlyerImage, setSelectedFlyerImage] = useState<string | null>(null);
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [scannedEventData, setScannedEventData] = useState<any>(null);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isScanning, setIsScanning] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -124,7 +131,7 @@ export default function Admin() {
 
       toast({
         title: `Event ${action}d`,
-        description: `The event has been ${action}d successfully`,
+        description: `The event has been ${action}d and archived`,
       });
 
       // Reload events
@@ -138,6 +145,114 @@ export default function Admin() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleArchiveEvent = async (eventId: string) => {
+    setIsLoading(true);
+    try {
+      const storedPassword = sessionStorage.getItem("admin_password") || password;
+      const { error } = await supabase.functions.invoke('manage-events', {
+        body: { action: 'archive-event', eventId, password: storedPassword }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Event archived",
+        description: "The event has been archived without approval/rejection",
+      });
+
+      await loadPendingEvents();
+    } catch (error: any) {
+      toast({
+        title: "Archive failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleArchiveFlyer = async (flyerId: string) => {
+    setIsLoading(true);
+    try {
+      const storedPassword = sessionStorage.getItem("admin_password") || password;
+      const { error } = await supabase.functions.invoke('manage-events', {
+        body: { action: 'archive-flyer', flyerId, password: storedPassword }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Flyer archived",
+        description: "The flyer has been archived",
+      });
+
+      await loadPendingEvents();
+    } catch (error: any) {
+      toast({
+        title: "Archive failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleScanFlyer = async (submissionId: string) => {
+    setIsScanning(submissionId);
+    try {
+      const { data, error } = await supabase.functions.invoke('scan-event-flyer', {
+        body: { submission_id: submissionId }
+      });
+
+      if (error) throw error;
+
+      if (data?.event) {
+        setScannedEventData(data.event);
+        setIsConfirmDialogOpen(true);
+        toast({
+          title: "Flyer scanned!",
+          description: "Review the extracted details",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Scan failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsScanning(null);
+    }
+  };
+
+  const handleConfirmScannedEvent = async (eventData: any) => {
+    setIsLoading(true);
+    try {
+      // The event is already created by the scan function, just reload
+      await loadPendingEvents();
+      setIsConfirmDialogOpen(false);
+      toast({
+        title: "Event submitted!",
+        description: "The event has been added to pending events for approval",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Submission failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleViewFullImage = (imageUrl: string) => {
+    setSelectedFlyerImage(imageUrl);
+    setIsImageDialogOpen(true);
   };
 
   const handleLogout = () => {
@@ -287,6 +402,14 @@ export default function Admin() {
                           <XCircle className="w-4 h-4 mr-2" />
                           Reject
                         </Button>
+                        <Button
+                          onClick={() => handleArchiveEvent(event.id)}
+                          disabled={isLoading}
+                          variant="outline"
+                        >
+                          <Archive className="w-4 h-4 mr-2" />
+                          Archive
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -318,11 +441,17 @@ export default function Admin() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {flyerImageUrls[flyer.id] && (
-                        <img 
-                          src={flyerImageUrls[flyer.id]} 
-                          alt="Event flyer"
-                          className="w-full h-48 object-cover rounded-md"
-                        />
+                        <div className="relative group">
+                          <img 
+                            src={flyerImageUrls[flyer.id]} 
+                            alt="Event flyer"
+                            className="w-full h-48 object-cover rounded-md cursor-pointer"
+                            onClick={() => handleViewFullImage(flyerImageUrls[flyer.id])}
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center">
+                            <Eye className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
                       )}
                       {flyer.submitter_email && (
                         <p className="text-sm">
@@ -334,6 +463,28 @@ export default function Admin() {
                           <strong>Notes:</strong> {flyer.processing_notes}
                         </p>
                       )}
+                      <div className="flex gap-2 pt-2">
+                        {!flyer.processed && (
+                          <Button
+                            onClick={() => handleScanFlyer(flyer.id)}
+                            disabled={isScanning === flyer.id}
+                            className="flex-1"
+                            size="sm"
+                          >
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            {isScanning === flyer.id ? "Scanning..." : "Scan with AI"}
+                          </Button>
+                        )}
+                        <Button
+                          onClick={() => handleArchiveFlyer(flyer.id)}
+                          disabled={isLoading}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Archive className="w-4 h-4 mr-2" />
+                          Archive
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -378,6 +529,20 @@ export default function Admin() {
           </TabsContent>
         </Tabs>
       </main>
+      
+      <FlyerImageDialog 
+        open={isImageDialogOpen}
+        onOpenChange={setIsImageDialogOpen}
+        imageUrl={selectedFlyerImage}
+      />
+      
+      <EventConfirmationDialog
+        open={isConfirmDialogOpen}
+        onOpenChange={setIsConfirmDialogOpen}
+        eventData={scannedEventData}
+        onConfirm={handleConfirmScannedEvent}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

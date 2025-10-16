@@ -12,7 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { action, eventId, password } = await req.json();
+    const requestBody = await req.json();
+    const { action, eventId, password, flyerId } = requestBody;
     
     // Verify admin password
     const adminPassword = Deno.env.get('ADMIN_PASSWORD');
@@ -32,19 +33,21 @@ serve(async (req) => {
     let result;
 
     if (action === 'list') {
-      // Get all pending submissions
+      // Get all pending, non-archived submissions
       const { data: events, error } = await supabase
         .from('events')
         .select('*, event_submissions(submitter_email)')
         .eq('status', 'pending')
+        .eq('archived', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Get flyer submissions
+      // Get non-archived flyer submissions
       const { data: flyers, error: flyersError } = await supabase
         .from('flyer_submissions')
         .select('*')
+        .eq('archived', false)
         .order('created_at', { ascending: false });
 
       if (flyersError) console.error('Error fetching flyers:', flyersError);
@@ -78,12 +81,12 @@ serve(async (req) => {
 
       result = { events, flyers: flyersWithUrls, contacts: contacts || [] };
     } else if (action === 'approve' || action === 'reject') {
-      // Update event status
+      // Update event status and archive it
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       
       const { data, error } = await supabase
         .from('events')
-        .update({ status: newStatus })
+        .update({ status: newStatus, archived: true })
         .eq('id', eventId)
         .select()
         .single();
@@ -92,6 +95,32 @@ serve(async (req) => {
 
       console.log(`Event ${eventId} ${action}ed successfully`);
       result = { event: data };
+    } else if (action === 'archive-event') {
+      // Archive event without changing status
+      const { data, error } = await supabase
+        .from('events')
+        .update({ archived: true })
+        .eq('id', eventId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`Event ${eventId} archived successfully`);
+      result = { event: data };
+    } else if (action === 'archive-flyer') {
+      // Archive flyer submission
+      const { data, error } = await supabase
+        .from('flyer_submissions')
+        .update({ archived: true })
+        .eq('id', flyerId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`Flyer ${flyerId} archived successfully`);
+      result = { flyer: data };
     } else {
       return new Response(
         JSON.stringify({ error: 'Invalid action' }),

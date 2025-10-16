@@ -126,6 +126,7 @@ export type Database = {
       }
       events: {
         Row: {
+          archived: boolean
           created_at: string
           description: string | null
           end_time: string | null
@@ -138,6 +139,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           description?: string | null
           end_time?: string | null
@@ -150,6 +152,7 @@ export type Database = {
           title: string
         }
         Update: {
+          archived?: boolean
           created_at?: string
           description?: string | null
           end_time?: string | null
@@ -165,6 +168,7 @@ export type Database = {
       }
       flyer_submissions: {
         Row: {
+          archived: boolean
           created_at: string
           event_id: string | null
           id: string
@@ -174,6 +178,7 @@ export type Database = {
           submitter_email: string | null
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           event_id?: string | null
           id?: string
@@ -183,6 +188,7 @@ export type Database = {
           submitter_email?: string | null
         }
         Update: {
+          archived?: boolean
           created_at?: string
           event_id?: string | null
           id?: string
