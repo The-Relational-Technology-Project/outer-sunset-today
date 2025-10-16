@@ -58,9 +58,16 @@ serve(async (req) => {
       throw new Error('Failed to download image from storage');
     }
 
-    // Convert blob to base64
+    // Convert blob to base64 (chunked to avoid stack overflow)
     const arrayBuffer = await imageData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let base64 = '';
+    const chunkSize = 0x8000; // 32KB chunks
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      base64 += String.fromCharCode(...chunk);
+    }
+    base64 = btoa(base64);
     const mimeType = imageData.type || 'image/jpeg';
     const imageBase64 = `data:${mimeType};base64,${base64}`;
 

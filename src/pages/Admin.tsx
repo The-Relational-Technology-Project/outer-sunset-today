@@ -51,15 +51,21 @@ export default function Admin() {
 
   // Extract image URLs from flyer submissions
   useEffect(() => {
-    if (isAuthenticated && flyerSubmissions.length > 0) {
-      const urls: Record<string, string> = {};
-      flyerSubmissions.forEach((submission: any) => {
-        if (submission.imageUrl) {
-          urls[submission.id] = submission.imageUrl;
-        }
-      });
-      setFlyerImageUrls(urls);
-    }
+    const loadImageUrls = async () => {
+      if (isAuthenticated && flyerSubmissions.length > 0) {
+        const urls: Record<string, string> = {};
+        await Promise.all(
+          flyerSubmissions.map(async (submission: any) => {
+            if (submission.storage_path) {
+              const url = await getFlyerImageUrl(submission.storage_path);
+              if (url) urls[submission.id] = url;
+            }
+          })
+        );
+        setFlyerImageUrls(urls);
+      }
+    };
+    loadImageUrls();
   }, [isAuthenticated, flyerSubmissions]);
 
   const handleLogin = async (e: React.FormEvent) => {
