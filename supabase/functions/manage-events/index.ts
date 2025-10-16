@@ -81,12 +81,12 @@ serve(async (req) => {
 
       result = { events, flyers: flyersWithUrls, contacts: contacts || [] };
     } else if (action === 'approve' || action === 'reject') {
-      // Update event status and archive it
+      // Update event status only (don't auto-archive)
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       
       const { data, error } = await supabase
         .from('events')
-        .update({ status: newStatus, archived: true })
+        .update({ status: newStatus })
         .eq('id', eventId)
         .select()
         .single();
