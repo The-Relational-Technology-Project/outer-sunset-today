@@ -204,10 +204,18 @@ serve(async (req) => {
 
     console.log('Event created:', event);
 
+    // Convert the timestamps back to date and time strings for editing
+    const eventForEditing = {
+      ...eventDetails,
+      id: event.id, // Include the database ID so it can be updated
+      start_time: eventDetails.start_time,
+      end_time: eventDetails.end_time || ''
+    };
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        event: eventDetails,
+        event: eventForEditing,
         message: 'Event extracted and submitted for approval!'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

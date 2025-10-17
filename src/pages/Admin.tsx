@@ -242,16 +242,31 @@ export default function Admin() {
   const handleConfirmScannedEvent = async (eventData: any) => {
     setIsLoading(true);
     try {
-      // The event is already created by the scan function, just reload
+      // Update the event with the edited data
+      const { error } = await supabase
+        .from('events')
+        .update({
+          title: eventData.title,
+          location: eventData.location,
+          event_date: eventData.event_date,
+          start_time: `${eventData.event_date}T${eventData.start_time}:00`,
+          end_time: eventData.end_time ? `${eventData.event_date}T${eventData.end_time}:00` : null,
+          description: eventData.description,
+          event_type: eventData.event_type,
+        })
+        .eq('id', scannedEventData.id);
+
+      if (error) throw error;
+
       await loadPendingEvents();
       setIsConfirmDialogOpen(false);
       toast({
-        title: "Event submitted!",
-        description: "The event has been added to pending events for approval",
+        title: "Event updated!",
+        description: "The event has been updated and is ready for approval",
       });
     } catch (error: any) {
       toast({
-        title: "Submission failed",
+        title: "Update failed",
         description: error.message,
         variant: "destructive",
       });
