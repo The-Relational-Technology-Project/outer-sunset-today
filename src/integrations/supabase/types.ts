@@ -261,10 +261,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_surf_count: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      increment_surf_count: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user"
