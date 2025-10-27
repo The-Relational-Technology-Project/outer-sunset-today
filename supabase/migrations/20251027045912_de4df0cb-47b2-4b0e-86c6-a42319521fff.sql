@@ -1,0 +1,23 @@
+-- Add events for the week of Oct 27 - Nov 2, 2025
+INSERT INTO events (title, location, start_time, end_time, event_date, event_type, description, status) VALUES
+  ('Storytime: For Families', 'Ortega Branch Library', '2025-10-27 10:30:00-07', '2025-10-27 11:00:00-07', '2025-10-27', 'Family/Children', 'A fun morning of books, songs, and rhymes for children of all ages at the Ortega Branch Library. Free drop-in event.', 'approved'),
+  ('Meditate Together', 'Sealevel Studio (4331 Irving St)', '2025-10-28 18:00:00-07', '2025-10-28 19:00:00-07', '2025-10-28', 'Wellness/Meditation', 'A guided group meditation session open to all levels. Join neighbors for a calming hour of mindfulness in the Outer Sunset. Free weekly Tuesday meditation group.', 'approved'),
+  ('Storytime: For Toddlers', 'Ortega Branch Library', '2025-10-28 10:30:00-07', '2025-10-28 11:00:00-07', '2025-10-28', 'Early Childhood', 'Lively books, songs, and movement activities designed for toddlers ~16 months to 2 years (with caregivers). A great way for little ones to learn and play. Free.', 'approved'),
+  ('Halloween Night Bazaar & Block Party', 'Irving St (22nd-25th Ave)', '2025-10-31 17:00:00-07', '2025-10-31 22:00:00-07', '2025-10-31', 'Community Festival', 'A huge free Halloween street festival spanning three blocks of Irving Street. Expect local food vendors, games, treats, live music, and family-friendly fun. Come in costume for the kids'' costume contest, join the "zombie parade," and enjoy a festive night market. Hosted by Sunset Mercantile and partners.', 'approved'),
+  ('Movies in McCoppin Square', 'McCoppin Square (Taraval & 23rd)', '2025-10-31 17:30:00-07', NULL, '2025-10-31', 'Outdoor Film', 'Free Friday movie night in McCoppin Square – the finale of October''s family movie series. Bring blankets and get cozy for a fun Halloween-themed film in the park. Presented by People of Parkside Sunset and Sunset Chinese Cultural District.', 'approved'),
+  ('Outer Sunset Farmers Market & Mercantile', '37th Ave (at Ortega, to Quintara)', '2025-11-02 09:00:00-08', '2025-11-02 14:00:00-08', '2025-11-02', 'Community Market', 'The weekly Outer Sunset farmers market on 37th Ave. Fresh produce, local vendors, and community gathering.', 'approved'),
+  ('Community Music Hangout', 'Golden Gate Park - JFK Drive @ Blue Heron Lake', '2025-11-02 12:00:00-08', '2025-11-02 15:00:00-08', '2025-11-02', 'Music Jam/Open Mic', 'A freewheeling open mic jam session at the public piano in Golden Gate Park. Musicians and singers of all levels are welcome – bring an instrument or just come to sing along and meet neighbors. Free; happens every weekend when weather permits.', 'approved'),
+  ('Chair Yoga @ Sundays at the Beach', 'Sunset Dunes at Irving Street', '2025-11-02 14:00:00-08', '2025-11-02 15:00:00-08', '2025-11-02', 'Fitness/Wellness', 'A gentle yoga class using chairs for support, held outdoors on Sunset Dunes. Both seated and standing poses are modified for all abilities – great for seniors or anyone looking for a relaxing stretch. Free, all ages.', 'approved');
+
+-- Add Arizmendi pizza menus for the week (Oct 28 - Nov 2, 2025)
+-- Note: Monday Oct 27 is skipped as Arizmendi is closed on Mondays
+INSERT INTO daily_menus (restaurant, location, menu_date, special_item, category, hours) VALUES
+  ('Arizmendi Bakery', 'Outer Sunset', '2025-10-28', 'Brussels sprouts, goat cheese, & balsamic vinaigrette on sourdough crust', 'Pizza', '11:00 AM - 6:00 PM (Pizza from 11 AM)'),
+  ('Arizmendi Bakery', 'Outer Sunset', '2025-10-29', 'Cherry tomatoes, mixed greens, & smoked gouda with garlic oil (plus parsley & parmesan)', 'Pizza', '11:00 AM - 6:00 PM (Pizza from 11 AM)'),
+  ('Arizmendi Bakery', 'Outer Sunset', '2025-10-30', 'Roasted honey nut squash & kale with feta and rosemary oil', 'Pizza', '11:00 AM - 6:00 PM (Pizza from 11 AM)'),
+  ('Arizmendi Bakery', 'Outer Sunset', '2025-10-31', 'House-made tomato sauce, spinach, fontina, & oregano oil', 'Pizza', '11:00 AM - 6:00 PM (Pizza from 11 AM)'),
+  ('Arizmendi Bakery', 'Outer Sunset', '2025-11-01', 'Shiitake, button and portobello mushrooms with sesame-ginger-garlic vinaigrette, parsley', 'Pizza', '11:00 AM - 6:00 PM (Pizza from 11 AM)'),
+  ('Arizmendi Bakery', 'Outer Sunset', '2025-11-02', 'House-made tomato sauce with basil pesto', 'Pizza', '11:00 AM - 6:00 PM (Pizza from 11 AM)');
+
+-- Mark Wednesday Oct 29 as a Best Blue Day based on weather forecast
+INSERT INTO best_blue_days (blue_date) VALUES ('2025-10-29');
