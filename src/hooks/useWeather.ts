@@ -9,6 +9,7 @@ interface WeatherData {
   icon: string;
   lowTemp: number;
   highTemp: number;
+  tides: Array<{ time: string; type: 'H' | 'L'; height: string }>;
 }
 
 export function useWeather() {

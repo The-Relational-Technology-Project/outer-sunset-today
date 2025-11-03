@@ -36,12 +36,26 @@ serve(async (req) => {
 
     console.log('Fetching forecast from:', forecastUrl);
 
-    // Get forecast
-    const forecastResponse = await fetch(forecastUrl, {
-      headers: {
-        'User-Agent': '(OuterSunsetToday.com, hello@relationaltechproject.org)',
-      },
-    });
+    // Get today's date for tide API
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+
+    // Fetch weather and tides in parallel
+    const [forecastResponse, tidesResponse] = await Promise.all([
+      fetch(forecastUrl, {
+        headers: {
+          'User-Agent': '(OuterSunsetToday.com, hello@relationaltechproject.org)',
+        },
+      }),
+      fetch(
+        `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=9414275&datum=MLLW&time_zone=lst_ldt&units=english&format=json&interval=hilo&begin_date=${dateStr}&end_date=${dateStr}`,
+        {
+          headers: {
+            'User-Agent': '(OuterSunsetToday.com, hello@relationaltechproject.org)',
+          },
+        }
+      ),
+    ]);
 
     if (!forecastResponse.ok) {
       throw new Error(`Failed to get forecast: ${forecastResponse.status}`);
@@ -51,19 +65,53 @@ serve(async (req) => {
     const periods = forecastData.properties.periods;
 
     // Get today's forecast (first period)
-    const today = periods[0];
+    const todayForecast = periods[0];
     
     // Try to find tonight's forecast for low temp
     const tonight = periods.find((p: any) => p.isDaytime === false) || periods[1];
 
+    // Parse tide data
+    let tides: Array<{ time: string; type: 'H' | 'L'; height: string }> = [];
+    
+    if (tidesResponse.ok) {
+      const tidesData = await tidesResponse.json();
+      console.log('Raw tide data:', tidesData);
+      
+      if (tidesData.predictions && Array.isArray(tidesData.predictions)) {
+        // Filter tides between 6am and 8pm
+        tides = tidesData.predictions
+          .filter((prediction: any) => {
+            const time = prediction.t.split(' ')[1];
+            const [hours] = time.split(':').map(Number);
+            return hours >= 6 && hours < 20;
+          })
+          .map((prediction: any) => {
+            const time = prediction.t.split(' ')[1];
+            const [hours, minutes] = time.split(':').map(Number);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+            const formattedTime = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+            
+            return {
+              time: formattedTime,
+              type: prediction.type as 'H' | 'L',
+              height: parseFloat(prediction.v).toFixed(1),
+            };
+          });
+      }
+    } else {
+      console.error('Failed to fetch tides:', tidesResponse.status);
+    }
+
     const weather = {
-      temperature: today.temperature,
-      temperatureUnit: today.temperatureUnit,
-      shortForecast: today.shortForecast,
-      detailedForecast: today.detailedForecast,
-      icon: today.icon,
+      temperature: todayForecast.temperature,
+      temperatureUnit: todayForecast.temperatureUnit,
+      shortForecast: todayForecast.shortForecast,
+      detailedForecast: todayForecast.detailedForecast,
+      icon: todayForecast.icon,
       lowTemp: tonight.temperature,
-      highTemp: today.temperature,
+      highTemp: todayForecast.temperature,
+      tides,
     };
 
     console.log('Weather data:', weather);
