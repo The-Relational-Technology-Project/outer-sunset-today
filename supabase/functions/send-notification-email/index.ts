@@ -86,7 +86,8 @@ serve(async (req) => {
     }
 
     const { error: emailError } = await resend.emails.send({
-      from: "Outer Sunset Today <onboarding@resend.dev>",
+      from: "Outer Sunset Today <humans@relationaltechproject.org>",
+      reply_to: "humans@relationaltechproject.org",
       to: [notificationEmail],
       subject,
       html,
