@@ -82,6 +82,25 @@ serve(async (req) => {
     }
 
     console.log("submit-event created eventId:", eventId);
+    
+    // Send notification email in background (don't await)
+    if (eventId) {
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'event',
+          data: {
+            title,
+            location,
+            event_date,
+            start_time,
+            description,
+            event_type,
+            submitter_email,
+          },
+        },
+      }).catch(err => console.error('Failed to send notification:', err));
+    }
+    
     return new Response(JSON.stringify({ success: true, eventId }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
