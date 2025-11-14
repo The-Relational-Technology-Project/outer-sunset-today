@@ -142,6 +142,17 @@ export default function Submit() {
         throw dbError;
       }
 
+      // Send notification email
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'flyer',
+          data: {
+            storage_path: filePath,
+            submitter_email: quickEmail || null,
+          },
+        },
+      }).catch(err => console.error('Failed to send notification:', err));
+
       toast({
         title: "Flyer uploaded!",
         description: "Thank you! We'll review your flyer and add the event soon.",
@@ -179,6 +190,19 @@ export default function Submit() {
         });
 
       if (error) throw error;
+
+      // Send notification email
+      supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'contact',
+          data: {
+            name: contactForm.name,
+            email: contactForm.email,
+            message: contactForm.message,
+            submission_type: 'recurring_event',
+          },
+        },
+      }).catch(err => console.error('Failed to send notification:', err));
 
       toast({
         title: "Message sent!",
