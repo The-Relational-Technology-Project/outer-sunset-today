@@ -192,8 +192,8 @@ serve(async (req) => {
 
         try {
           const { error: emailError } = await resend.emails.send({
-            from: "Outer Sunset Today <humans@relationaltechproject.org>",
-            reply_to: "humans@relationaltechproject.org",
+            from: "Outer Sunset Today <notifications@relationaltechproject.org>",
+            reply_to: "josh@relationaltechproject.org",
             to: [subscriber.email],
             subject: "Outer Sunset Today - This Week",
             html: emailHTML,

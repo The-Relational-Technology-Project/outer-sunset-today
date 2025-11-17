@@ -91,8 +91,8 @@ serve(async (req) => {
     const unsubscribeUrl = `https://outersunset.today/unsubscribe/${subscriber.unsubscribe_token}`;
     
     const { error: emailError } = await resend.emails.send({
-      from: "Outer Sunset Today <humans@relationaltechproject.org>",
-      reply_to: "humans@relationaltechproject.org",
+      from: "Outer Sunset Today <notifications@relationaltechproject.org>",
+      reply_to: "josh@relationaltechproject.org",
       to: [email],
       subject: "Welcome to Outer Sunset Today Newsletter!",
       html: `
