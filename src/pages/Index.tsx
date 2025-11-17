@@ -12,6 +12,7 @@ import { FloatingMyPlanButton } from "@/components/FloatingMyPlanButton";
 import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WeatherWidget } from "@/components/WeatherWidget";
+import NewsletterSubscribe from "@/components/NewsletterSubscribe";
 
 const Index = () => {
   const { planEvents } = useMyPlan();
@@ -109,6 +110,10 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="py-12 text-center border-t border-border mt-12">
+          <div className="flex justify-center mb-8">
+            <NewsletterSubscribe />
+          </div>
+          
           <p className="text-muted-foreground mb-4">
             Made in the Sunset – by us, for us 🧡
           </p>
