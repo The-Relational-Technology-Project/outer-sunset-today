@@ -4,10 +4,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail } from "lucide-react";
+import { HumanVerification } from "@/components/HumanVerification";
 
 const NewsletterSubscribe = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(0);
   const { toast } = useToast();
 
   const handleSubscribe = async (e: React.FormEvent) => {
@@ -17,6 +20,15 @@ const NewsletterSubscribe = () => {
       toast({
         title: "Email required",
         description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isVerified) {
+      toast({
+        title: "Verification required",
+        description: "Please complete the human verification",
         variant: "destructive",
       });
       return;
@@ -37,6 +49,7 @@ const NewsletterSubscribe = () => {
       });
       
       setEmail("");
+      setResetTrigger(prev => prev + 1);
     } catch (error: any) {
       console.error("Newsletter subscription error:", error);
       toast({
@@ -60,7 +73,7 @@ const NewsletterSubscribe = () => {
       <p className="text-sm text-muted-foreground mb-4 font-handwritten">
         Get a weekly roundup of events and food highlights every Monday.
       </p>
-      <form onSubmit={handleSubscribe} className="flex gap-2">
+      <form onSubmit={handleSubscribe} className="space-y-4">
         <Input
           type="email"
           placeholder="your@email.com"
@@ -69,7 +82,11 @@ const NewsletterSubscribe = () => {
           disabled={isLoading}
           className="font-handwritten"
         />
-        <Button type="submit" disabled={isLoading}>
+        <HumanVerification 
+          onVerified={setIsVerified} 
+          resetTrigger={resetTrigger}
+        />
+        <Button type="submit" disabled={isLoading || !isVerified} className="w-full">
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
