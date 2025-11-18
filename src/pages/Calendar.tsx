@@ -25,12 +25,32 @@ export default function Calendar() {
     { id: "music", label: "Live Music" },
     { id: "volunteer", label: "Volunteer" },
     { id: "family", label: "Family-Friendly" },
-    { id: "art", label: "Art & Culture" }
+    { id: "art", label: "Art & Culture" },
+    { id: "food", label: "Food & Dining" },
+    { id: "wellness", label: "Wellness" },
+    { id: "outdoor", label: "Outdoor" }
   ];
+
+  // Map filter IDs to actual event type keywords
+  const filterMapping: Record<string, string[]> = {
+    music: ['music', 'live music', 'open mic', 'jam'],
+    family: ['family', 'children', 'kids', 'infant', 'toddler', 'storytime', 'early childhood', 'babies'],
+    art: ['art', 'culture', 'cultural', 'author', 'literary', 'theater', 'spoken word', 'book club', 'writing'],
+    community: ['community', 'civic', 'festival', 'market', 'walk', 'cleanup'],
+    volunteer: ['volunteer', 'service', 'environment'],
+    business: ['restaurant', 'pop-up', 'retail', 'food/pop-up', 'bakery', 'brunch', 'special'],
+    food: ['food', 'restaurant', 'brunch', 'special', 'pop-up bakery'],
+    wellness: ['wellness', 'fitness', 'meditation', 'exercise', 'dance'],
+    outdoor: ['outdoor', 'nature', 'beach', 'zoo', 'park']
+  };
 
   const filteredEvents = selectedFilter === "all" 
     ? allEvents 
-    : allEvents.filter(event => event.category.toLowerCase().includes(selectedFilter.toLowerCase()));
+    : allEvents.filter(event => {
+        const eventType = event.category.toLowerCase();
+        const keywords = filterMapping[selectedFilter] || [];
+        return keywords.some(keyword => eventType.includes(keyword));
+      });
 
   return (
     <div className="min-h-screen bg-background">
