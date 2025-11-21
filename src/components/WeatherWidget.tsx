@@ -55,14 +55,14 @@ export const WeatherWidget = () => {
             <p className="text-xs text-muted-foreground font-handwritten">
               {weather.shortForecast}
             </p>
-            {weather.tides && weather.tides.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-cork">
-                <div className="flex items-start gap-2">
-                  <Waves className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground font-bulletin mb-1">
-                      Ocean Beach Tides
-                    </p>
+            <div className="mt-3 pt-3 border-t border-cork">
+              <div className="flex items-start gap-2">
+                <Waves className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground font-bulletin mb-1">
+                    Ocean Beach Tides
+                  </p>
+                  {weather.tides && weather.tides.length > 0 ? (
                     <div className="space-y-1">
                       {weather.tides.map((tide, idx) => (
                         <p key={idx} className="text-sm text-muted-foreground font-handwritten">
@@ -70,10 +70,14 @@ export const WeatherWidget = () => {
                         </p>
                       ))}
                     </div>
-                  </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground font-handwritten italic">
+                      Tide data temporarily unavailable
+                    </p>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
             {isBestBlueDay && !isLoadingBlueDay && (
               <div className="mt-2 pt-2 border-t border-cork">
                 <p className="text-xs font-bold text-primary font-bulletin flex items-center gap-1">
