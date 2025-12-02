@@ -154,69 +154,63 @@ serve(async (req) => {
 
     const dateRange = `${today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${nextWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
-    // Send emails in batches
-    const batchSize = 50;
+    // Send emails with rate limiting (2 per second max)
     let successCount = 0;
     let errorCount = 0;
 
-    for (let i = 0; i < subscribers.length; i += batchSize) {
-      const batch = subscribers.slice(i, i + batchSize);
+    for (let i = 0; i < subscribers.length; i++) {
+      const subscriber = subscribers[i];
+      const unsubscribeUrl = `https://outersunset.today/unsubscribe/${subscriber.unsubscribe_token}`;
       
-      const emailPromises = batch.map(async (subscriber) => {
-        const unsubscribeUrl = `https://outersunset.today/unsubscribe/${subscriber.unsubscribe_token}`;
-        
-        const emailHTML = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #2c5282; border-bottom: 2px solid #4299e1; padding-bottom: 10px;">
-              🌅 Outer Sunset Today
-            </h1>
-            <p style="color: #4a5568; font-size: 16px;">Your weekly guide to the neighborhood • ${dateRange}</p>
-            
-            <h2 style="color: #2c5282; margin-top: 30px;">📅 This Week's Events</h2>
-            ${buildEventsHTML()}
-            
-            <h2 style="color: #2c5282; margin-top: 30px;">🍽️ This Week's Food Highlights</h2>
-            ${buildMenusHTML()}
-            
-            <hr style="border: 1px solid #e2e8f0; margin: 30px 0;" />
-            
-            <p style="color: #718096; font-size: 14px; text-align: center;">
-              Visit <a href="https://outersunset.today" style="color: #4299e1;">outersunset.today</a> for the latest updates
-            </p>
-            
-            <p style="color: #a0aec0; font-size: 12px; text-align: center;">
-              <a href="${unsubscribeUrl}" style="color: #a0aec0;">Unsubscribe from this newsletter</a>
-            </p>
-          </div>
-        `;
+      const emailHTML = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #2c5282; border-bottom: 2px solid #4299e1; padding-bottom: 10px;">
+            🌅 Outer Sunset Today
+          </h1>
+          <p style="color: #4a5568; font-size: 16px;">Your weekly guide to the neighborhood • ${dateRange}</p>
+          
+          <h2 style="color: #2c5282; margin-top: 30px;">📅 This Week's Events</h2>
+          ${buildEventsHTML()}
+          
+          <h2 style="color: #2c5282; margin-top: 30px;">🍽️ This Week's Food Highlights</h2>
+          ${buildMenusHTML()}
+          
+          <hr style="border: 1px solid #e2e8f0; margin: 30px 0;" />
+          
+          <p style="color: #718096; font-size: 14px; text-align: center;">
+            Visit <a href="https://outersunset.today" style="color: #4299e1;">outersunset.today</a> for the latest updates
+          </p>
+          
+          <p style="color: #a0aec0; font-size: 12px; text-align: center;">
+            <a href="${unsubscribeUrl}" style="color: #a0aec0;">Unsubscribe from this newsletter</a>
+          </p>
+        </div>
+      `;
 
-        try {
-          const { error: emailError } = await resend.emails.send({
-            from: "Outer Sunset Today <notifications@relationaltechproject.org>",
-            reply_to: "josh@relationaltechproject.org",
-            to: [subscriber.email],
-            subject: "Outer Sunset Today - This Week",
-            html: emailHTML,
-          });
+      try {
+        const { error: emailError } = await resend.emails.send({
+          from: "Outer Sunset Today <notifications@relationaltechproject.org>",
+          reply_to: "josh@relationaltechproject.org",
+          to: [subscriber.email],
+          subject: "Outer Sunset Today - This Week",
+          html: emailHTML,
+        });
 
-          if (emailError) {
-            console.error(`Error sending to ${subscriber.email}:`, emailError);
-            return false;
-          }
-          return true;
-        } catch (err) {
-          console.error(`Exception sending to ${subscriber.email}:`, err);
-          return false;
+        if (emailError) {
+          console.error(`Error sending to ${subscriber.email}:`, emailError);
+          errorCount++;
+        } else {
+          console.log(`Successfully sent to ${subscriber.email}`);
+          successCount++;
         }
-      });
+      } catch (err) {
+        console.error(`Exception sending to ${subscriber.email}:`, err);
+        errorCount++;
+      }
 
-      const results = await Promise.all(emailPromises);
-      successCount += results.filter(r => r).length;
-      errorCount += results.filter(r => !r).length;
-
-      // Small delay between batches to respect rate limits
-      if (i + batchSize < subscribers.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait 600ms between emails to stay under 2 per second rate limit
+      if (i < subscribers.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
     }
 
