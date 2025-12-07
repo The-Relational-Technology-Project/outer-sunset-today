@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.get-public-events]
 verify_jwt = false
+
+[functions.bulk-import-events]
+verify_jwt = false
