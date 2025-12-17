@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  type: "event" | "contact" | "flyer";
+  type: "event" | "contact" | "flyer" | "import";
   data: {
     title?: string;
     location?: string;
@@ -24,6 +24,8 @@ interface NotificationRequest {
     message?: string;
     submission_type?: string;
     storage_path?: string;
+    subject?: string;
+    html?: string;
   };
 }
 
@@ -79,6 +81,11 @@ serve(async (req) => {
           <hr />
           <p><em>Visit your admin dashboard to review the flyer and process the event.</em></p>
         `;
+        break;
+
+      case "import":
+        subject = data.subject || "Weekly Event Import Complete";
+        html = data.html || "<p>Import completed.</p>";
         break;
 
       default:

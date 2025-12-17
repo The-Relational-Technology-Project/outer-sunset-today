@@ -20,3 +20,12 @@ verify_jwt = false
 
 [functions.bulk-import-events]
 verify_jwt = false
+
+[functions.firecrawl-scrape]
+verify_jwt = false
+
+[functions.firecrawl-search]
+verify_jwt = false
+
+[functions.weekly-event-scraper]
+verify_jwt = false
