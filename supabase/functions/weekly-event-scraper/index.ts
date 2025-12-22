@@ -299,6 +299,35 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
   }
 }
 
+// Helper to run scrapes in parallel batches
+async function scrapeBatch(
+  sources: { name: string; url: string; type?: string }[],
+  apiKey: string,
+  waitFor = 3000
+): Promise<{ name: string; content: string | null }[]> {
+  const results = await Promise.all(
+    sources.map(async (source) => {
+      const content = await scrapeUrl(source.url, apiKey, waitFor);
+      return { name: source.name, content };
+    })
+  );
+  return results;
+}
+
+// Helper to run searches in parallel
+async function searchBatch(
+  sources: { name: string; query: string }[],
+  apiKey: string
+): Promise<{ name: string; content: string | null }[]> {
+  const results = await Promise.all(
+    sources.map(async (source) => {
+      const content = await searchQuery(source.query, apiKey);
+      return { name: source.name, content };
+    })
+  );
+  return results;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -319,43 +348,66 @@ serve(async (req) => {
     const allContent: string[] = [];
     const sourceResults: { name: string; success: boolean }[] = [];
 
-    // 1. Scrape event pages
-    console.log('--- Scraping Event Pages ---');
-    for (const source of EVENT_PAGES) {
-      const content = await scrapeUrl(source.url, firecrawlApiKey);
+    // Run all scraping in PARALLEL for speed
+    console.log('--- Scraping All Sources in Parallel ---');
+    
+    // Batch 1: First 7 event pages + pizza menu
+    const batch1Sources = EVENT_PAGES.slice(0, 7);
+    const batch1 = scrapeBatch(batch1Sources, firecrawlApiKey, 2000);
+    
+    // Batch 2: Remaining event pages
+    const batch2Sources = EVENT_PAGES.slice(7);
+    const batch2 = scrapeBatch(batch2Sources, firecrawlApiKey, 2000);
+    
+    // Batch 3: Pizza sources (need longer wait)
+    const batch3 = scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 4000);
+    
+    // Batch 4: All search queries
+    const batch4 = searchBatch(SEARCH_SOURCES, firecrawlApiKey);
+
+    // Wait for all batches to complete in parallel
+    const [results1, results2, results3, results4] = await Promise.all([
+      batch1, batch2, batch3, batch4
+    ]);
+
+    // Process batch 1 results
+    for (const { name, content } of results1) {
       if (content) {
-        allContent.push(`=== ${source.name} ===\n${content}`);
-        sourceResults.push({ name: source.name, success: true });
+        allContent.push(`=== ${name} ===\n${content}`);
+        sourceResults.push({ name, success: true });
       } else {
-        sourceResults.push({ name: source.name, success: false });
+        sourceResults.push({ name, success: false });
       }
-      // Small delay between requests
-      await new Promise(r => setTimeout(r, 500));
     }
 
-    // 2. Scrape pizza menus (Arizmendi) with longer wait time for dynamic content
-    console.log('--- Scraping Pizza Menus ---');
-    for (const source of PIZZA_SOURCES) {
-      const content = await scrapeUrl(source.url, firecrawlApiKey, 5000);
+    // Process batch 2 results
+    for (const { name, content } of results2) {
       if (content) {
-        allContent.push(`=== ${source.name} (PIZZA MENU) ===\n${content}`);
-        sourceResults.push({ name: source.name, success: true });
+        allContent.push(`=== ${name} ===\n${content}`);
+        sourceResults.push({ name, success: true });
       } else {
-        sourceResults.push({ name: source.name, success: false });
+        sourceResults.push({ name, success: false });
       }
     }
 
-    // 3. Search-based sources
-    console.log('--- Searching Additional Sources ---');
-    for (const source of SEARCH_SOURCES) {
-      const content = await searchQuery(source.query, firecrawlApiKey);
+    // Process batch 3 results (pizza)
+    for (const { name, content } of results3) {
       if (content) {
-        allContent.push(`=== ${source.name} (Search Results) ===\n${content}`);
-        sourceResults.push({ name: source.name, success: true });
+        allContent.push(`=== ${name} (PIZZA MENU) ===\n${content}`);
+        sourceResults.push({ name, success: true });
       } else {
-        sourceResults.push({ name: source.name, success: false });
+        sourceResults.push({ name, success: false });
       }
-      await new Promise(r => setTimeout(r, 500));
+    }
+
+    // Process batch 4 results (searches)
+    for (const { name, content } of results4) {
+      if (content) {
+        allContent.push(`=== ${name} (Search Results) ===\n${content}`);
+        sourceResults.push({ name, success: true });
+      } else {
+        sourceResults.push({ name, success: false });
+      }
     }
 
     const successfulSources = sourceResults.filter(s => s.success).length;
