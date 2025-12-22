@@ -127,8 +127,11 @@ async function searchQuery(query: string, apiKey: string): Promise<string | null
 // Process content with Lovable AI (Gemini)
 async function extractWithAI(content: string, weekStart: string, weekEnd: string): Promise<{ events: any[]; menus: any[] }> {
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
+      return { events: [], menus: [] };
+    }
     
     const prompt = `You are extracting events and pizza menus from web content for the Outer Sunset, Outer Richmond, and Inner Sunset neighborhoods of San Francisco.
 
@@ -173,18 +176,26 @@ ${content}`;
 
     console.log('Calling Lovable AI for extraction...');
     
-    const response = await fetch(`${supabaseUrl}/functions/v1/proxy/google/gemini-2.5-flash`, {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 8192,
-        },
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at extracting structured event and menu data from web content. Always respond with valid JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 8192,
       }),
     });
 
@@ -195,7 +206,9 @@ ${content}`;
     }
 
     const data = await response.json();
-    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const aiText = data.choices?.[0]?.message?.content || '';
+    
+    console.log('AI raw response length:', aiText.length);
     
     // Parse JSON from response (handle potential markdown code blocks)
     let jsonStr = aiText.trim();
@@ -414,9 +427,14 @@ serve(async (req) => {
     const totalSources = sourceResults.length;
     console.log(`Scraped ${successfulSources}/${totalSources} sources successfully`);
 
-    // 4. Extract events and menus with AI
+    // 4. Extract events and menus with AI (truncate to avoid timeout)
     console.log('--- Extracting with AI ---');
-    const combinedContent = allContent.join('\n\n========================================\n\n');
+    let combinedContent = allContent.join('\n\n========================================\n\n');
+    // Truncate to ~100k chars to avoid AI timeout
+    if (combinedContent.length > 100000) {
+      console.log(`Truncating content from ${combinedContent.length} to 100000 chars`);
+      combinedContent = combinedContent.slice(0, 100000);
+    }
     const { events, menus } = await extractWithAI(combinedContent, weekStart, weekEnd);
 
     // 5. Import to database
