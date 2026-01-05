@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.weekly-event-scraper]
 verify_jwt = false
+
+[functions.get-weather]
+verify_jwt = false

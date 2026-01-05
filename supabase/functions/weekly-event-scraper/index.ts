@@ -7,32 +7,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Source configurations
+// Source configurations - reduced set for speed
+// Priority sources that consistently have events
 const EVENT_PAGES = [
   { name: "Blackbird Cafe", url: "https://blackbirdsf.com/pages/events" },
-  { name: "Ortega Library", url: "https://sfpl.org/events/#!/filters?field_event_location_target_id=46" },
-  { name: "Ocean Plant", url: "https://www.oceanplant.com/" },
-  { name: "Java Beach Cafe", url: "https://javabeachcafe.com/events" },
-  { name: "Case for Making", url: "https://caseformaking.com/pages/cfm-art-room" },
-  { name: "Sunset Mercantile", url: "https://sunsetmercantilesf.com/" },
-  { name: "Sunset Dunes Park", url: "https://sunsetdunes.org/events" },
-  { name: "Outer Sunset Neighbors", url: "https://sunsetneighbors.org/events/" },
   { name: "Sealevel Studio", url: "https://sealevelsf.com/pages/events" },
+  { name: "Sunset Dunes Park", url: "https://sunsetdunes.org/events" },
   { name: "Outer Village", url: "https://www.outervillagesf.com/classes-events" },
-  { name: "Golden Gate Jams", url: "https://goldengatejams.com/" },
-  { name: "Braid Bakery", url: "https://braidbakery.com/" },
-  { name: "SF Zoo", url: "https://www.sfzoo.org/calendar/" },
+  { name: "Ortega Library", url: "https://sfpl.org/events/#!/filters?field_event_location_target_id=46" },
+  { name: "Outer Sunset Neighbors", url: "https://sunsetneighbors.org/events/" },
 ];
 
 const PIZZA_SOURCES = [
   { name: "Arizmendi Bakery", url: "https://www.arizmendibakery.com/pizza", type: "menu" },
 ];
 
+// Reduced search sources
 const SEARCH_SOURCES = [
-  { name: "Daymoon Bakery", query: "Daymoon Bakery San Francisco events 2025" },
-  { name: "Third Realm", query: "Third Realm Inner Sunset San Francisco events" },
   { name: "Outer Sunset Farmers Market", query: "Outer Sunset Farmers Market San Francisco schedule" },
-  { name: "Golden Gate Park events", query: "Golden Gate Park San Francisco free events this week" },
 ];
 
 // Get date range: This Sunday through next Sunday
@@ -364,27 +356,15 @@ serve(async (req) => {
     // Run all scraping in PARALLEL for speed
     console.log('--- Scraping All Sources in Parallel ---');
     
-    // Batch 1: First 7 event pages + pizza menu
-    const batch1Sources = EVENT_PAGES.slice(0, 7);
-    const batch1 = scrapeBatch(batch1Sources, firecrawlApiKey, 2000);
-    
-    // Batch 2: Remaining event pages
-    const batch2Sources = EVENT_PAGES.slice(7);
-    const batch2 = scrapeBatch(batch2Sources, firecrawlApiKey, 2000);
-    
-    // Batch 3: Pizza sources (need longer wait)
-    const batch3 = scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 4000);
-    
-    // Batch 4: All search queries
-    const batch4 = searchBatch(SEARCH_SOURCES, firecrawlApiKey);
-
-    // Wait for all batches to complete in parallel
-    const [results1, results2, results3, results4] = await Promise.all([
-      batch1, batch2, batch3, batch4
+    // Run everything in parallel
+    const [eventResults, pizzaResults, searchResults] = await Promise.all([
+      scrapeBatch(EVENT_PAGES, firecrawlApiKey, 2000),
+      scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 4000),
+      searchBatch(SEARCH_SOURCES, firecrawlApiKey),
     ]);
 
-    // Process batch 1 results
-    for (const { name, content } of results1) {
+    // Process event results
+    for (const { name, content } of eventResults) {
       if (content) {
         allContent.push(`=== ${name} ===\n${content}`);
         sourceResults.push({ name, success: true });
@@ -393,18 +373,8 @@ serve(async (req) => {
       }
     }
 
-    // Process batch 2 results
-    for (const { name, content } of results2) {
-      if (content) {
-        allContent.push(`=== ${name} ===\n${content}`);
-        sourceResults.push({ name, success: true });
-      } else {
-        sourceResults.push({ name, success: false });
-      }
-    }
-
-    // Process batch 3 results (pizza)
-    for (const { name, content } of results3) {
+    // Process pizza results
+    for (const { name, content } of pizzaResults) {
       if (content) {
         allContent.push(`=== ${name} (PIZZA MENU) ===\n${content}`);
         sourceResults.push({ name, success: true });
@@ -413,8 +383,8 @@ serve(async (req) => {
       }
     }
 
-    // Process batch 4 results (searches)
-    for (const { name, content } of results4) {
+    // Process search results
+    for (const { name, content } of searchResults) {
       if (content) {
         allContent.push(`=== ${name} (Search Results) ===\n${content}`);
         sourceResults.push({ name, success: true });
@@ -427,21 +397,21 @@ serve(async (req) => {
     const totalSources = sourceResults.length;
     console.log(`Scraped ${successfulSources}/${totalSources} sources successfully`);
 
-    // 4. Extract events and menus with AI (truncate to avoid timeout)
+    // Extract events and menus with AI (truncate to avoid timeout)
     console.log('--- Extracting with AI ---');
     let combinedContent = allContent.join('\n\n========================================\n\n');
-    // Truncate to ~100k chars to avoid AI timeout
-    if (combinedContent.length > 100000) {
-      console.log(`Truncating content from ${combinedContent.length} to 100000 chars`);
-      combinedContent = combinedContent.slice(0, 100000);
+    // Truncate to ~60k chars for faster processing
+    if (combinedContent.length > 60000) {
+      console.log(`Truncating content from ${combinedContent.length} to 60000 chars`);
+      combinedContent = combinedContent.slice(0, 60000);
     }
     const { events, menus } = await extractWithAI(combinedContent, weekStart, weekEnd);
 
-    // 5. Import to database
+    // Import to database
     console.log('--- Importing to Database ---');
     const importResults = await importToDatabase(events, menus);
 
-    // 6. Send notification email
+    // Send notification email
     await sendNotificationEmail(importResults, weekStart, weekEnd);
 
     const response = {
