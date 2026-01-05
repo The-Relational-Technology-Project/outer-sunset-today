@@ -1,5 +1,8 @@
 project_id = "nawdvulumebqbxmkedzw"
 
+[functions.add-menus]
+verify_jwt = false
+
 [functions.manage-events]
 verify_jwt = false
 

@@ -135,10 +135,11 @@ async function extractWithAI(content: string, weekStart: string, weekEnd: string
     const prompt = `You are extracting events and pizza menus from web content for the Outer Sunset, Outer Richmond, and Inner Sunset neighborhoods of San Francisco.
 
 DATE RANGE: ${weekStart} to ${weekEnd} (Sunday through the following Sunday)
+CURRENT YEAR: 2026
 
 INSTRUCTIONS:
 1. Extract ALL events that fall within the date range
-2. For Arizmendi pizza content, extract the FULL WEEK of pizza menus (each day's pizza)
+2. For Arizmendi pizza content, extract EACH DAY's pizza from the calendar grid
 3. Only include events in SF's Sunset/Richmond neighborhoods
 4. Use 24-hour time format (e.g., 14:00 not 2pm)
 5. If a time is not specified, use reasonable defaults based on event type
@@ -152,21 +153,29 @@ For each EVENT, extract:
 - description: 1-2 sentence description
 - event_type: One of: community, food, music, wellness, outdoor, art, family, market, volunteer
 
-For PIZZA MENUS (Arizmendi), extract EACH DAY:
+PIZZA MENU EXTRACTION (Arizmendi):
+The Arizmendi page shows a calendar grid with days and pizza descriptions.
+For EACH day in the calendar that falls within our date range, extract:
 - restaurant: "Arizmendi Bakery"
 - location: "1331 9th Ave, San Francisco"
-- menu_date: YYYY-MM-DD
-- special_item: Full pizza description for that day
+- menu_date: YYYY-MM-DD (use the year 2026)
+- special_item: The pizza toppings listed for that day (e.g., "mushrooms, spinach, feta, garlic oil, parmesan")
 - category: "pizza"
 - hours: "11am until sold out"
 
+CRITICAL FOR PIZZA:
+- The calendar shows dates with pizza descriptions underneath each date
+- Extract EVERY day that has pizza toppings listed (not "closed" days)
+- Days marked "closed for the holidays" or similar should be skipped
+- Make sure to get ALL days in the date range, not just one
+
 IMPORTANT:
-- Extract ALL days of pizza menus shown, not just one
 - Skip any events outside the date range
 - Skip duplicates (same event appearing multiple times)
 
 Return ONLY valid JSON in this format (no markdown, no explanation):
 {"events": [...], "menus": [...]}
+
 
 If no events or menus found, return: {"events": [], "menus": []}
 
