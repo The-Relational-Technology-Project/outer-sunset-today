@@ -7,22 +7,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Source configurations - reduced set for speed
-// Priority sources that consistently have events
-const EVENT_PAGES = [
+// Source configurations - split into primary (fast) and secondary (additional) batches
+// PRIMARY: High-priority sources that consistently have events
+const PRIMARY_EVENT_PAGES = [
   { name: "Blackbird Cafe", url: "https://blackbirdsf.com/pages/events" },
   { name: "Sealevel Studio", url: "https://sealevelsf.com/pages/events" },
   { name: "Sunset Dunes Park", url: "https://sunsetdunes.org/events" },
   { name: "Outer Village", url: "https://www.outervillagesf.com/classes-events" },
   { name: "Ortega Library", url: "https://sfpl.org/events/#!/filters?field_event_location_target_id=46" },
+];
+
+// SECONDARY: Additional sources, run after primary completes
+const SECONDARY_EVENT_PAGES = [
   { name: "Outer Sunset Neighbors", url: "https://sunsetneighbors.org/events/" },
+  { name: "Java Beach Cafe", url: "https://www.javabeachcafe.com/events" },
+  { name: "Ocean Plant", url: "https://www.oceanplantsf.com/events" },
+  { name: "Case for Making", url: "https://caseformaking.com/events" },
 ];
 
 const PIZZA_SOURCES = [
   { name: "Arizmendi Bakery", url: "https://www.arizmendibakery.com/pizza", type: "menu" },
 ];
 
-// Reduced search sources
+// Search sources - run with primary batch
 const SEARCH_SOURCES = [
   { name: "Outer Sunset Farmers Market", query: "Outer Sunset Farmers Market San Francisco schedule" },
 ];
@@ -353,18 +360,17 @@ serve(async (req) => {
     const allContent: string[] = [];
     const sourceResults: { name: string; success: boolean }[] = [];
 
-    // Run all scraping in PARALLEL for speed
-    console.log('--- Scraping All Sources in Parallel ---');
+    // Run PRIMARY sources in parallel first (critical sources)
+    console.log('--- Scraping Primary Sources ---');
     
-    // Run everything in parallel
-    const [eventResults, pizzaResults, searchResults] = await Promise.all([
-      scrapeBatch(EVENT_PAGES, firecrawlApiKey, 2000),
+    const [primaryEventResults, pizzaResults, searchResults] = await Promise.all([
+      scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
       scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 4000),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
     ]);
 
-    // Process event results
-    for (const { name, content } of eventResults) {
+    // Process primary event results
+    for (const { name, content } of primaryEventResults) {
       if (content) {
         allContent.push(`=== ${name} ===\n${content}`);
         sourceResults.push({ name, success: true });
@@ -387,6 +393,19 @@ serve(async (req) => {
     for (const { name, content } of searchResults) {
       if (content) {
         allContent.push(`=== ${name} (Search Results) ===\n${content}`);
+        sourceResults.push({ name, success: true });
+      } else {
+        sourceResults.push({ name, success: false });
+      }
+    }
+
+    // Run SECONDARY sources after primary completes
+    console.log('--- Scraping Secondary Sources ---');
+    const secondaryEventResults = await scrapeBatch(SECONDARY_EVENT_PAGES, firecrawlApiKey, 2000);
+    
+    for (const { name, content } of secondaryEventResults) {
+      if (content) {
+        allContent.push(`=== ${name} ===\n${content}`);
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
