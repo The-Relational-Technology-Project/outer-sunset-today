@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { action, eventId, password, flyerId } = requestBody;
+    const { action, eventId, password, flyerId, updates } = requestBody;
     
     // Verify admin password
     const adminPassword = Deno.env.get('ADMIN_PASSWORD');
@@ -121,6 +121,26 @@ serve(async (req) => {
 
       console.log(`Flyer ${flyerId} archived successfully`);
       result = { flyer: data };
+    } else if (action === 'update-event') {
+      // Update event fields
+      if (!updates || typeof updates !== 'object') {
+        return new Response(
+          JSON.stringify({ error: 'Updates object required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data, error } = await supabase
+        .from('events')
+        .update(updates)
+        .eq('id', eventId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`Event ${eventId} updated successfully:`, updates);
+      result = { event: data };
     } else {
       return new Response(
         JSON.stringify({ error: 'Invalid action' }),
