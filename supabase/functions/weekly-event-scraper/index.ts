@@ -153,21 +153,25 @@ For each EVENT, extract:
 - description: 1-2 sentence description
 - event_type: One of: community, food, music, wellness, outdoor, art, family, market, volunteer
 
-PIZZA MENU EXTRACTION (Arizmendi):
-The Arizmendi page shows a calendar grid with days and pizza descriptions.
-For EACH day in the calendar that falls within our date range, extract:
+PIZZA MENU EXTRACTION (Arizmendi Bakery):
+The Arizmendi calendar is a markdown table with columns: Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.
+- IMPORTANT: Arizmendi is CLOSED on Sundays and Mondays - skip those days
+- Each cell has the format: "DAY_NUMBER<br>pizza toppings description"
+- Extract EVERY pizza for dates within our date range (${weekStart} to ${weekEnd})
+
+For EACH pizza day, create a menu entry with:
 - restaurant: "Arizmendi Bakery"
 - location: "1331 9th Ave, San Francisco"
-- menu_date: YYYY-MM-DD (use the year 2026)
-- special_item: The pizza toppings listed for that day (e.g., "mushrooms, spinach, feta, garlic oil, parmesan")
-- category: "pizza"
+- menu_date: YYYY-MM-DD format (January 2026)
+- special_item: The pizza toppings (e.g., "mushrooms, spinach, feta, garlic oil, p&p")
+- category: "Pizza"
 - hours: "11am until sold out"
 
-CRITICAL FOR PIZZA:
-- The calendar shows dates with pizza descriptions underneath each date
-- Extract EVERY day that has pizza toppings listed (not "closed" days)
-- Days marked "closed for the holidays" or similar should be skipped
-- Make sure to get ALL days in the date range, not just one
+CRITICAL FOR PIZZA EXTRACTION:
+- Look for dates like "18<br>marinated artichoke hearts..." meaning Jan 18
+- Skip cells that say "closed for the holidays" or similar
+- You should find 5-6 pizza entries per week (Tue-Sat)
+- Double-check you extracted ALL pizzas in the date range
 
 IMPORTANT:
 - Skip any events outside the date range
@@ -175,7 +179,6 @@ IMPORTANT:
 
 Return ONLY valid JSON in this format (no markdown, no explanation):
 {"events": [...], "menus": [...]}
-
 
 If no events or menus found, return: {"events": [], "menus": []}
 
