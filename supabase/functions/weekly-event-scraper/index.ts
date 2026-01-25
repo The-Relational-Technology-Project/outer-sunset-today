@@ -123,26 +123,19 @@ async function searchQuery(query: string, apiKey: string): Promise<string | null
   }
 }
 
-// Process content with Lovable AI (Gemini)
-async function extractWithAI(content: string, weekStart: string, weekEnd: string): Promise<{ events: any[]; menus: any[] }> {
+// Extract EVENTS with AI
+async function extractEventsWithAI(content: string, weekStart: string, weekEnd: string): Promise<any[]> {
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY not configured');
-      return { events: [], menus: [] };
+      return [];
     }
     
-    const prompt = `You are extracting events and pizza menus from web content for the Outer Sunset, Outer Richmond, and Inner Sunset neighborhoods of San Francisco.
+    const prompt = `You are extracting EVENTS from web content for the Outer Sunset, Outer Richmond, and Inner Sunset neighborhoods of San Francisco.
 
 DATE RANGE: ${weekStart} to ${weekEnd} (Sunday through the following Sunday)
 CURRENT YEAR: 2026
-
-INSTRUCTIONS:
-1. Extract ALL events that fall within the date range
-2. For Arizmendi pizza content, extract EACH DAY's pizza from the calendar grid
-3. Only include events in SF's Sunset/Richmond neighborhoods
-4. Use 24-hour time format (e.g., 14:00 not 2pm)
-5. If a time is not specified, use reasonable defaults based on event type
 
 For each EVENT, extract:
 - title: Event name (clean, concise)
@@ -153,39 +146,20 @@ For each EVENT, extract:
 - description: 1-2 sentence description
 - event_type: One of: community, food, music, wellness, outdoor, art, family, market, volunteer
 
-PIZZA MENU EXTRACTION (Arizmendi Bakery):
-The Arizmendi calendar is a markdown table with columns: Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.
-- IMPORTANT: Arizmendi is CLOSED on Sundays and Mondays - skip those days
-- Each cell has the format: "DAY_NUMBER<br>pizza toppings description"
-- Extract EVERY pizza for dates within our date range (${weekStart} to ${weekEnd})
-
-For EACH pizza day, create a menu entry with:
-- restaurant: "Arizmendi Bakery"
-- location: "1331 9th Ave, San Francisco"
-- menu_date: YYYY-MM-DD format (January 2026)
-- special_item: The pizza toppings (e.g., "mushrooms, spinach, feta, garlic oil, p&p")
-- category: "Pizza"
-- hours: "11am until sold out"
-
-CRITICAL FOR PIZZA EXTRACTION:
-- Look for dates like "18<br>marinated artichoke hearts..." meaning Jan 18
-- Skip cells that say "closed for the holidays" or similar
-- You should find 5-6 pizza entries per week (Tue-Sat)
-- Double-check you extracted ALL pizzas in the date range
-
 IMPORTANT:
 - Skip any events outside the date range
 - Skip duplicates (same event appearing multiple times)
+- Use 24-hour time format (e.g., 14:00 not 2pm)
 
-Return ONLY valid JSON in this format (no markdown, no explanation):
-{"events": [...], "menus": [...]}
+Return ONLY valid JSON array (no markdown, no explanation):
+[{"title": "...", "location": "...", "event_date": "YYYY-MM-DD", ...}, ...]
 
-If no events or menus found, return: {"events": [], "menus": []}
+If no events found, return: []
 
 CONTENT TO ANALYZE:
 ${content}`;
 
-    console.log('Calling Lovable AI for extraction...');
+    console.log('Calling AI for event extraction...');
     
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -196,14 +170,8 @@ ${content}`;
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          {
-            role: 'system',
-            content: 'You are an expert at extracting structured event and menu data from web content. Always respond with valid JSON only.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
+          { role: 'system', content: 'You extract events from web content. Always respond with valid JSON array only.' },
+          { role: 'user', content: prompt }
         ],
         temperature: 0.1,
         max_tokens: 8192,
@@ -211,35 +179,115 @@ ${content}`;
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI extraction failed:', errorText);
-      return { events: [], menus: [] };
+      console.error('AI event extraction failed:', await response.text());
+      return [];
     }
 
     const data = await response.json();
-    const aiText = data.choices?.[0]?.message?.content || '';
+    let jsonStr = data.choices?.[0]?.message?.content?.trim() || '[]';
     
-    console.log('AI raw response length:', aiText.length);
-    
-    // Parse JSON from response (handle potential markdown code blocks)
-    let jsonStr = aiText.trim();
-    if (jsonStr.startsWith('```json')) {
-      jsonStr = jsonStr.slice(7);
-    }
-    if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.slice(3);
-    }
-    if (jsonStr.endsWith('```')) {
-      jsonStr = jsonStr.slice(0, -3);
-    }
+    // Clean markdown code blocks
+    if (jsonStr.startsWith('```json')) jsonStr = jsonStr.slice(7);
+    if (jsonStr.startsWith('```')) jsonStr = jsonStr.slice(3);
+    if (jsonStr.endsWith('```')) jsonStr = jsonStr.slice(0, -3);
     jsonStr = jsonStr.trim();
 
-    const result = JSON.parse(jsonStr);
-    console.log(`AI extracted: ${result.events?.length || 0} events, ${result.menus?.length || 0} menus`);
-    return result;
+    const events = JSON.parse(jsonStr);
+    console.log(`AI extracted: ${events.length} events`);
+    return Array.isArray(events) ? events : [];
   } catch (error) {
-    console.error('Error in AI extraction:', error);
-    return { events: [], menus: [] };
+    console.error('Error in AI event extraction:', error);
+    return [];
+  }
+}
+
+// Extract PIZZA MENUS with AI - dedicated function for reliable extraction
+async function extractPizzaMenusWithAI(pizzaContent: string, weekStart: string, weekEnd: string): Promise<any[]> {
+  try {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
+      return [];
+    }
+
+    // Parse the date range to know which dates we need
+    const startDate = new Date(weekStart);
+    const endDate = new Date(weekEnd);
+    
+    const prompt = `Extract Arizmendi Bakery pizza menu for the week of ${weekStart} to ${weekEnd}.
+
+The content below shows a calendar table. Each cell contains a date number followed by pizza toppings.
+Format: "DAY_NUMBER<br>pizza toppings" (e.g., "27<br>roasted yellow potatoes with basil pesto")
+
+RULES:
+1. Arizmendi is CLOSED on Sundays and Mondays - skip those days
+2. Extract pizzas for Tuesday through Saturday only
+3. All dates are in January 2026
+4. You should find approximately 5 pizzas (Tue-Sat) within the date range
+
+For EACH pizza day within ${weekStart} to ${weekEnd}, create an entry:
+{
+  "restaurant": "Arizmendi Bakery",
+  "location": "1331 9th Ave, San Francisco",
+  "menu_date": "2026-01-XX",
+  "special_item": "the pizza toppings exactly as written",
+  "category": "pizza",
+  "hours": "11am until sold out"
+}
+
+Return ONLY a JSON array. No explanations.
+Example: [{"restaurant": "Arizmendi Bakery", "location": "1331 9th Ave, San Francisco", "menu_date": "2026-01-27", "special_item": "roasted yellow potatoes with basil pesto", "category": "pizza", "hours": "11am until sold out"}, ...]
+
+CALENDAR CONTENT:
+${pizzaContent}`;
+
+    console.log('Calling AI for pizza menu extraction...');
+    
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: 'You extract pizza menu data from calendar content. Return ONLY valid JSON array.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 2048,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('AI pizza extraction failed:', await response.text());
+      return [];
+    }
+
+    const data = await response.json();
+    let jsonStr = data.choices?.[0]?.message?.content?.trim() || '[]';
+    
+    // Clean markdown code blocks
+    if (jsonStr.startsWith('```json')) jsonStr = jsonStr.slice(7);
+    if (jsonStr.startsWith('```')) jsonStr = jsonStr.slice(3);
+    if (jsonStr.endsWith('```')) jsonStr = jsonStr.slice(0, -3);
+    jsonStr = jsonStr.trim();
+
+    const menus = JSON.parse(jsonStr);
+    console.log(`AI extracted: ${menus.length} pizza menus`);
+    
+    // Validate dates are within range
+    const validMenus = (Array.isArray(menus) ? menus : []).filter((m: any) => {
+      const menuDate = new Date(m.menu_date);
+      return menuDate >= startDate && menuDate <= endDate;
+    });
+    
+    console.log(`Valid pizza menus in range: ${validMenus.length}`);
+    return validMenus;
+  } catch (error) {
+    console.error('Error in AI pizza extraction:', error);
+    return [];
   }
 }
 
@@ -368,8 +416,9 @@ serve(async (req) => {
     const { weekStart, weekEnd } = getDateRange();
     console.log(`Processing week: ${weekStart} to ${weekEnd}`);
 
-    // Collect all scraped content
-    const allContent: string[] = [];
+    // Collect scraped content separately for events and pizza
+    const eventContent: string[] = [];
+    let pizzaContent: string = '';
     const sourceResults: { name: string; success: boolean }[] = [];
 
     // Run PRIMARY sources in parallel first (critical sources)
@@ -384,18 +433,19 @@ serve(async (req) => {
     // Process primary event results
     for (const { name, content } of primaryEventResults) {
       if (content) {
-        allContent.push(`=== ${name} ===\n${content}`);
+        eventContent.push(`=== ${name} ===\n${content}`);
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
       }
     }
 
-    // Process pizza results
+    // Process pizza results - keep separate for dedicated extraction
     for (const { name, content } of pizzaResults) {
       if (content) {
-        allContent.push(`=== ${name} (PIZZA MENU) ===\n${content}`);
+        pizzaContent = content; // Store pizza content separately
         sourceResults.push({ name, success: true });
+        console.log(`Pizza content length: ${content.length} chars`);
       } else {
         sourceResults.push({ name, success: false });
       }
@@ -404,7 +454,7 @@ serve(async (req) => {
     // Process search results
     for (const { name, content } of searchResults) {
       if (content) {
-        allContent.push(`=== ${name} (Search Results) ===\n${content}`);
+        eventContent.push(`=== ${name} (Search Results) ===\n${content}`);
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
@@ -417,7 +467,7 @@ serve(async (req) => {
     
     for (const { name, content } of secondaryEventResults) {
       if (content) {
-        allContent.push(`=== ${name} ===\n${content}`);
+        eventContent.push(`=== ${name} ===\n${content}`);
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
@@ -428,15 +478,23 @@ serve(async (req) => {
     const totalSources = sourceResults.length;
     console.log(`Scraped ${successfulSources}/${totalSources} sources successfully`);
 
-    // Extract events and menus with AI (truncate to avoid timeout)
+    // Extract events and pizza menus SEPARATELY with AI
     console.log('--- Extracting with AI ---');
-    let combinedContent = allContent.join('\n\n========================================\n\n');
-    // Truncate to ~60k chars for faster processing
-    if (combinedContent.length > 60000) {
-      console.log(`Truncating content from ${combinedContent.length} to 60000 chars`);
-      combinedContent = combinedContent.slice(0, 60000);
+    
+    // Combine event content (truncate if needed)
+    let combinedEventContent = eventContent.join('\n\n========================================\n\n');
+    if (combinedEventContent.length > 60000) {
+      console.log(`Truncating event content from ${combinedEventContent.length} to 60000 chars`);
+      combinedEventContent = combinedEventContent.slice(0, 60000);
     }
-    const { events, menus } = await extractWithAI(combinedContent, weekStart, weekEnd);
+    
+    // Run event and pizza extraction in parallel
+    const [events, menus] = await Promise.all([
+      extractEventsWithAI(combinedEventContent, weekStart, weekEnd),
+      pizzaContent ? extractPizzaMenusWithAI(pizzaContent, weekStart, weekEnd) : Promise.resolve([]),
+    ]);
+    
+    console.log(`Total extracted: ${events.length} events, ${menus.length} pizza menus`);
 
     // Import to database
     console.log('--- Importing to Database ---');
