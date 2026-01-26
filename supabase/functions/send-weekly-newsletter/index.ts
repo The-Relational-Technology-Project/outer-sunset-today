@@ -113,10 +113,12 @@ serve(async (req) => {
       for (const [day, dayEvents] of Object.entries(eventsByDay)) {
         html += `<h3 style="color: #2c5282; margin-top: 20px; margin-bottom: 10px;">${day}</h3>`;
         dayEvents.forEach((event: any) => {
+          // Format time in Pacific Time
           const time = new Date(event.start_time).toLocaleTimeString('en-US', { 
             hour: 'numeric', 
             minute: '2-digit',
-            hour12: true 
+            hour12: true,
+            timeZone: 'America/Los_Angeles'
           });
           html += `
             <div style="margin-bottom: 15px; padding: 10px; background-color: #f7fafc; border-left: 3px solid #4299e1;">
