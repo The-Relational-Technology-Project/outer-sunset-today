@@ -139,7 +139,7 @@ CURRENT YEAR: 2026
 
 For each EVENT, extract:
 - title: Event name (clean, concise)
-- location: Venue name (e.g., "Sealevel Studio", "Ortega Library", "Java Beach Cafe")
+- location: Venue name (e.g., "Sealevel", "Ortega Library", "Java Beach Cafe"). IMPORTANT: Use "Sealevel" NOT "Sealevel Studio"
 - event_date: YYYY-MM-DD format
 - start_time: HH:MM (24-hour, Pacific Time)
 - end_time: HH:MM if available (optional)
