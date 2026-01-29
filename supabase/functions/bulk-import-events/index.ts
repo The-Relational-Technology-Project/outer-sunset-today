@@ -32,6 +32,28 @@ interface ImportRequest {
   menus?: MenuInput[];
 }
 
+// Normalize location names to ensure consistency
+function normalizeLocation(location: string): string {
+  const normalizations: Record<string, string> = {
+    'Sealevel Studio': 'Sealevel',
+    'sealevel studio': 'Sealevel',
+    'SEALEVEL STUDIO': 'Sealevel',
+  };
+  
+  // Check for exact matches first
+  if (normalizations[location]) {
+    return normalizations[location];
+  }
+  
+  // Check for case-insensitive partial matches
+  const lowerLocation = location.toLowerCase();
+  if (lowerLocation.includes('sealevel studio')) {
+    return location.replace(/sealevel studio/gi, 'Sealevel');
+  }
+  
+  return location;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -83,13 +105,16 @@ serve(async (req) => {
           continue;
         }
 
+        // Normalize location name
+        const normalizedLocation = normalizeLocation(event.location);
+
         // Check for duplicates (same title + date + location)
         const { data: existing } = await supabase
           .from('events')
           .select('id')
           .eq('title', event.title)
           .eq('event_date', event.event_date)
-          .eq('location', event.location)
+          .eq('location', normalizedLocation)
           .maybeSingle();
 
         if (existing) {
@@ -109,7 +134,7 @@ serve(async (req) => {
           .from('events')
           .insert({
             title: event.title,
-            location: event.location,
+            location: normalizedLocation,
             event_date: eventDate,
             start_time: startTime,
             end_time: endTime,
