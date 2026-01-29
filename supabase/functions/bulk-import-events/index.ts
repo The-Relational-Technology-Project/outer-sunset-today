@@ -34,21 +34,11 @@ interface ImportRequest {
 
 // Normalize location names to ensure consistency
 function normalizeLocation(location: string): string {
-  const normalizations: Record<string, string> = {
-    'Sealevel Studio': 'Sealevel',
-    'sealevel studio': 'Sealevel',
-    'SEALEVEL STUDIO': 'Sealevel',
-  };
-  
-  // Check for exact matches first
-  if (normalizations[location]) {
-    return normalizations[location];
-  }
-  
-  // Check for case-insensitive partial matches
   const lowerLocation = location.toLowerCase();
-  if (lowerLocation.includes('sealevel studio')) {
-    return location.replace(/sealevel studio/gi, 'Sealevel');
+  
+  // Normalize all Sealevel variations to just "Sealevel"
+  if (lowerLocation.includes('sealevel')) {
+    return 'Sealevel';
   }
   
   return location;
