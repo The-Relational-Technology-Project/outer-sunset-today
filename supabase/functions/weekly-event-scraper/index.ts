@@ -22,7 +22,7 @@ const SECONDARY_EVENT_PAGES = [
   { name: "Outer Sunset Neighbors", url: "https://sunsetneighbors.org/events/" },
   { name: "Java Beach Cafe", url: "https://www.javabeachcafe.com/events" },
   { name: "Ocean Plant", url: "https://www.oceanplantsf.com/events" },
-  { name: "Case for Making", url: "https://caseformaking.com/events" },
+  { name: "Case for Making", url: "https://caseformaking.com/pages/cfm-art-room" },
 ];
 
 const PIZZA_SOURCES = [
