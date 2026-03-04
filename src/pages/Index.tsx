@@ -13,6 +13,7 @@ import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/
 import { Skeleton } from "@/components/ui/skeleton";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import NewsletterSubscribe from "@/components/NewsletterSubscribe";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const Index = () => {
   const { planEvents } = useMyPlan();
