@@ -116,7 +116,6 @@ const Index = () => {
       </main>
 
       <SiteFooter />
-      </main>
     </div>
   );
 };
