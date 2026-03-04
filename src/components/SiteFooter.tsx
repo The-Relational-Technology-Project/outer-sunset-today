@@ -123,21 +123,9 @@ const CreditsFooter = () => (
   </section>
 );
 
-const SiteLinksFooter = () => (
-  <section className="py-4 px-4 border-t border-border text-center">
-    <a
-      href="/llm.txt"
-      className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-    >
-      Are you a helpful bot?
-    </a>
-  </section>
-);
-
 export const SiteFooter = () => (
   <footer>
     <SiblingSitesBoard />
     <CreditsFooter />
-    <SiteLinksFooter />
   </footer>
 );
