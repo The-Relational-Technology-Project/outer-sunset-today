@@ -109,38 +109,13 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="py-12 text-center border-t border-border mt-12">
-          <div className="flex justify-center mb-8">
-            <NewsletterSubscribe />
-          </div>
-          
-          <p className="text-muted-foreground mb-4">
-            Made in the Sunset – by us, for us 🧡
-          </p>
-          <p className="text-muted-foreground mb-4">
-            Contact:{" "}
-            <a 
-              href="mailto:hello@relationaltechproject.org" 
-              className="text-primary hover:underline"
-            >
-              hello@relationaltechproject.org
-            </a>
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 text-sm mb-4">
-            <a 
-              href="https://relationaltechproject.org/remix" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              Remix this site for your neighborhood!
-            </a>
-            <Link to="/privacy-terms" className="text-primary hover:underline">
-              Privacy and Terms
-            </Link>
-          </div>
-        </footer>
+        {/* Newsletter + Footer */}
+        <div className="flex justify-center mt-12 mb-0">
+          <NewsletterSubscribe />
+        </div>
+      </main>
+
+      <SiteFooter />
       </main>
     </div>
   );
