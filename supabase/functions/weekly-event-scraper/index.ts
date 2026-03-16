@@ -220,8 +220,8 @@ The content below shows a calendar table. Each cell contains a date number follo
 Format: "DAY_NUMBER<br>pizza toppings" (e.g., "27<br>roasted yellow potatoes with basil pesto")
 
 RULES:
-1. Arizmendi is CLOSED on Sundays and Mondays - skip those days
-2. Extract pizzas for Tuesday through Saturday only
+1. Arizmendi is CLOSED on Mondays only - skip Monday
+2. Extract pizzas for Tuesday through Sunday
 3. All dates are in January 2026
 4. You should find approximately 5 pizzas (Tue-Sat) within the date range
 
