@@ -223,7 +223,7 @@ RULES:
 1. Arizmendi is CLOSED on Mondays only - skip Monday
 2. Extract pizzas for Tuesday through Sunday
 3. All dates are in January 2026
-4. You should find approximately 5 pizzas (Tue-Sat) within the date range
+4. You should find approximately 6 pizzas (Tue-Sun) within the date range
 
 For EACH pizza day within ${weekStart} to ${weekEnd}, create an entry:
 {
