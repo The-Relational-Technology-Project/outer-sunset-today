@@ -9,8 +9,7 @@ import { useMyPlan } from "@/contexts/MyPlanContext";
 import { FloatingMyPlanButton } from "@/components/FloatingMyPlanButton";
 import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
-import { WeatherWidget } from "@/components/WeatherWidget";
-import ArizmendiBoardWidget from "@/components/ArizmendiBoardWidget";
+import { InfoStrip } from "@/components/InfoStrip";
 import { TodaysNews } from "@/components/TodaysNews";
 import NewsletterSubscribe from "@/components/NewsletterSubscribe";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -30,11 +29,7 @@ const Index = () => {
       <FloatingMyPlanButton />
       
       <main className="container mx-auto px-4 py-6">
-        {/* Compact widgets row */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <WeatherWidget />
-          <ArizmendiBoardWidget />
-        </div>
+        <InfoStrip />
 
         {/* Today section: Events + News side by side */}
         <div className="grid gap-6 lg:grid-cols-2 mt-8">
