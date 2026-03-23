@@ -207,6 +207,54 @@ export type Database = {
           },
         ]
       }
+      news_items: {
+        Row: {
+          article_hash: string
+          category: string | null
+          created_at: string
+          helpful_count: number
+          id: string
+          is_actionable: boolean | null
+          not_helpful_count: number
+          published_at: string | null
+          relevance_score: number | null
+          source_name: string
+          source_url: string
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          article_hash: string
+          category?: string | null
+          created_at?: string
+          helpful_count?: number
+          id?: string
+          is_actionable?: boolean | null
+          not_helpful_count?: number
+          published_at?: string | null
+          relevance_score?: number | null
+          source_name: string
+          source_url: string
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          article_hash?: string
+          category?: string | null
+          created_at?: string
+          helpful_count?: number
+          id?: string
+          is_actionable?: boolean | null
+          not_helpful_count?: number
+          published_at?: string | null
+          relevance_score?: number | null
+          source_name?: string
+          source_url?: string
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string
@@ -287,6 +335,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_news_feedback: {
+        Args: { feedback_type: string; item_id: string }
+        Returns: undefined
       }
       increment_surf_count: { Args: never; Returns: number }
     }
