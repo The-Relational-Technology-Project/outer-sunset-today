@@ -8,10 +8,10 @@ const corsHeaders = {
 
 // RSS sources for Outer Sunset / SF neighborhood news
 const RSS_SOURCES = [
-  { name: "SF Standard", url: "https://sfstandard.com/feed/" },
   { name: "Mission Local", url: "https://missionlocal.org/feed/" },
-  { name: "SFGate", url: "https://www.sfgate.com/bayarea/feed/Bay-Area-News-702.php" },
-  { name: "Hoodline", url: "https://hoodline.com/feed/" },
+  { name: "Richmond Sunset News", url: "https://richmondsunsetnews.com/feed/" },
+  { name: "SF Standard", url: "https://sfstandard.com/feed/" },
+  { name: "The Frisc", url: "https://thefrisc.com/feed" },
 ];
 
 interface ParsedArticle {
