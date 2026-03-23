@@ -30,11 +30,7 @@ const Index = () => {
       <FloatingMyPlanButton />
       
       <main className="container mx-auto px-4 py-6">
-        {/* Compact widgets row */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <WeatherWidget />
-          <ArizmendiBoardWidget />
-        </div>
+        <InfoStrip />
 
         {/* Today section: Events + News side by side */}
         <div className="grid gap-6 lg:grid-cols-2 mt-8">
