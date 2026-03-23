@@ -9,12 +9,6 @@ function NewsItemCard({ item }: { item: NewsItem }) {
     <div className="flex gap-3 py-2.5 border-b border-cork last:border-0">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          {item.is_actionable && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-coral uppercase tracking-wide">
-              <AlertCircle className="h-2.5 w-2.5" />
-              act now
-            </span>
-          )}
           <span className="text-[10px] text-muted-foreground">{item.source_name}</span>
         </div>
         <a
