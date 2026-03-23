@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNewsItems, NewsItem } from "@/hooks/useNewsItems";
-import { ExternalLink, Newspaper, AlertCircle } from "lucide-react";
+import { ExternalLink, Newspaper } from "lucide-react";
 
 function NewsItemCard({ item }: { item: NewsItem }) {
   return (
