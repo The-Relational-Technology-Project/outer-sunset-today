@@ -7,7 +7,6 @@ import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { TodaysMenus } from "@/components/TodaysMenus";
-import { MyPlanSidebar } from "@/components/MyPlanSidebar";
 import { FloatingMyPlanButton } from "@/components/FloatingMyPlanButton";
 import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,11 +18,9 @@ import { SiteFooter } from "@/components/SiteFooter";
 const Index = () => {
   const { planEvents } = useMyPlan();
   
-  // Fetch events from database
   const { data: todaysEventsData = [], isLoading: isLoadingToday } = useTodaysEvents();
   const { data: upcomingEventsData = [], isLoading: isLoadingUpcoming } = useUpcomingEvents();
   
-  // Format events for display
   const todaysEvents = todaysEventsData.map(formatEventForCard);
   const upcomingEvents = upcomingEventsData.map(formatEventForCard).slice(0, 8);
   
@@ -33,87 +30,84 @@ const Index = () => {
       <FloatingMyPlanButton />
       
       <main className="container mx-auto px-4 py-6">
-        {/* Main Content Grid */}
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Left Side - Events */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Today's Events */}
-            <section>
-              <WeatherWidget />
-              <div className="mt-4">
-                <TodaysNews />
-              </div>
-              
-              {isLoadingToday ? (
-                <div className="space-y-4 mt-4">
-                  {[1, 2].map((i) => (
-                    <Card key={i}>
-                      <CardContent className="p-6">
-                        <Skeleton className="h-6 w-3/4 mb-2" />
-                        <Skeleton className="h-4 w-1/2 mb-4" />
-                        <Skeleton className="h-4 w-full" />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : todaysEvents.length > 0 ? (
-                <div className="space-y-4 mt-4">
-                  {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
-                </div>
-              ) : (
-                <Card className="mt-4">
-                  <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground mb-4">
-                      No events scheduled for today. Check back tomorrow or add something yourself!
-                    </p>
-                    <Button asChild className="bg-coral hover:bg-coral/90 text-coral-foreground">
-                      <Link to="/submit">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Submit Today's Event
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </section>
+        {/* Weather */}
+        <WeatherWidget />
 
-            {/* Today's Menus */}
-            <TodaysMenus />
+        {/* Above the fold: News + Today's Events side by side */}
+        <div className="grid gap-6 lg:grid-cols-2 mt-4">
+          {/* News */}
+          <TodaysNews />
 
-            {/* Coming Up Soon */}
-            <section>
-              <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
-                Coming Up Soon
-              </h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {isLoadingUpcoming ? (
-                  <>
-                    <div className="animate-pulse bulletin-card h-32 bg-muted/50 rounded-lg" />
-                    <div className="animate-pulse bulletin-card h-32 bg-muted/50 rounded-lg" />
-                  </>
-                ) : (
-                  upcomingEvents.map(event => <EventCard key={event.id} event={event} compact />)
-                )}
+          {/* Today's Events */}
+          <section>
+            <h2 className="community-heading text-2xl sm:text-3xl text-foreground mb-3">
+              Today's Events
+            </h2>
+            {isLoadingToday ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <Card key={i}>
+                    <CardContent className="p-4">
+                      <Skeleton className="h-5 w-3/4 mb-2" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              {upcomingEvents.length > 0 && (
-                <div className="text-center mt-6">
-                  <Button variant="outline" asChild>
-                    <Link to="/calendar">
-                      View All Upcoming Events
+            ) : todaysEvents.length > 0 ? (
+              <div className="space-y-3">
+                {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground mb-3 text-sm">
+                    No events scheduled for today.
+                  </p>
+                  <Button asChild size="sm" className="bg-coral hover:bg-coral/90 text-coral-foreground">
+                    <Link to="/submit">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Submit an Event
                     </Link>
                   </Button>
-                </div>
-              )}
-            </section>
-          </div>
-
-          {/* Right Side - My Plan (Desktop only) */}
-          <div className="hidden lg:block">
-            <MyPlanSidebar />
-          </div>
+                </CardContent>
+              </Card>
+            )}
+          </section>
         </div>
 
-        {/* Newsletter + Footer */}
+        {/* Today's Menus */}
+        <div className="mt-8">
+          <TodaysMenus />
+        </div>
+
+        {/* Coming Up Soon */}
+        <section className="mt-8">
+          <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
+            Coming Up Soon
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {isLoadingUpcoming ? (
+              <>
+                <div className="animate-pulse bulletin-card h-32 bg-muted/50 rounded-lg" />
+                <div className="animate-pulse bulletin-card h-32 bg-muted/50 rounded-lg" />
+              </>
+            ) : (
+              upcomingEvents.map(event => <EventCard key={event.id} event={event} compact />)
+            )}
+          </div>
+          {upcomingEvents.length > 0 && (
+            <div className="text-center mt-6">
+              <Button variant="outline" asChild>
+                <Link to="/calendar">
+                  View All Upcoming Events
+                </Link>
+              </Button>
+            </div>
+          )}
+        </section>
+
+        {/* Newsletter */}
         <div className="flex justify-center mt-12 mb-0">
           <NewsletterSubscribe />
         </div>
