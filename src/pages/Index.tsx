@@ -33,11 +33,8 @@ const Index = () => {
         {/* Weather */}
         <WeatherWidget />
 
-        {/* Above the fold: News + Today's Events side by side */}
+        {/* Above the fold: Today's Events + News side by side */}
         <div className="grid gap-6 lg:grid-cols-2 mt-4">
-          {/* News */}
-          <TodaysNews />
-
           {/* Today's Events */}
           <section>
             <h2 className="community-heading text-2xl sm:text-3xl text-foreground mb-3">
@@ -74,6 +71,9 @@ const Index = () => {
               </Card>
             )}
           </section>
+
+          {/* News */}
+          <TodaysNews />
         </div>
 
         {/* Today's Menus */}

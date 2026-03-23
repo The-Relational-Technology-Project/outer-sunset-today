@@ -2,19 +2,13 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNewsItems, NewsItem } from "@/hooks/useNewsItems";
-import { ExternalLink, Newspaper, AlertCircle } from "lucide-react";
+import { ExternalLink, Newspaper } from "lucide-react";
 
 function NewsItemCard({ item }: { item: NewsItem }) {
   return (
     <div className="flex gap-3 py-2.5 border-b border-cork last:border-0">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          {item.is_actionable && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-coral uppercase tracking-wide">
-              <AlertCircle className="h-2.5 w-2.5" />
-              act now
-            </span>
-          )}
           <span className="text-[10px] text-muted-foreground">{item.source_name}</span>
         </div>
         <a
@@ -65,13 +59,10 @@ export const TodaysNews = () => {
   return (
     <Card className="bg-paper border-cork shadow-bulletin">
       <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-3">
           <Newspaper className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground font-bulletin">Neighborhood News</h3>
+          <h3 className="text-sm font-bold text-foreground font-bulletin">Today's News</h3>
         </div>
-        <p className="text-[10px] text-muted-foreground mb-3 font-handwritten">
-          What matters in the Outer Sunset today
-        </p>
         <div>
           {newsItems.map((item) => (
             <NewsItemCard key={item.id} item={item} />
