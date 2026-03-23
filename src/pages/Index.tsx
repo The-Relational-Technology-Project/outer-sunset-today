@@ -6,11 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
-import { TodaysMenus } from "@/components/TodaysMenus";
 import { FloatingMyPlanButton } from "@/components/FloatingMyPlanButton";
 import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WeatherWidget } from "@/components/WeatherWidget";
+import ArizmendiBoardWidget from "@/components/ArizmendiBoardWidget";
 import { TodaysNews } from "@/components/TodaysNews";
 import NewsletterSubscribe from "@/components/NewsletterSubscribe";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -30,11 +30,14 @@ const Index = () => {
       <FloatingMyPlanButton />
       
       <main className="container mx-auto px-4 py-6">
-        {/* Weather */}
-        <WeatherWidget />
+        {/* Compact widgets row */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <WeatherWidget />
+          <ArizmendiBoardWidget />
+        </div>
 
-        {/* Above the fold: Today's Events + News side by side */}
-        <div className="grid gap-6 lg:grid-cols-2 mt-4">
+        {/* Today section: Events + News side by side */}
+        <div className="grid gap-6 lg:grid-cols-2 mt-8">
           {/* Today's Events */}
           <section>
             <h2 className="community-heading text-2xl sm:text-3xl text-foreground mb-3">
@@ -43,7 +46,7 @@ const Index = () => {
             {isLoadingToday ? (
               <div className="space-y-3">
                 {[1, 2].map((i) => (
-                  <Card key={i}>
+                  <Card key={i} className="bulletin-card">
                     <CardContent className="p-4">
                       <Skeleton className="h-5 w-3/4 mb-2" />
                       <Skeleton className="h-4 w-1/2" />
@@ -56,7 +59,7 @@ const Index = () => {
                 {todaysEvents.map(event => <EventCard key={event.id} event={event} />)}
               </div>
             ) : (
-              <Card>
+              <Card className="bulletin-card">
                 <CardContent className="p-6 text-center">
                   <p className="text-muted-foreground mb-3 text-sm">
                     No events scheduled for today.
@@ -72,18 +75,18 @@ const Index = () => {
             )}
           </section>
 
-          {/* News */}
-          <TodaysNews />
+          {/* Today's News */}
+          <section>
+            <h2 className="community-heading text-2xl sm:text-3xl text-foreground mb-3">
+              Today's News
+            </h2>
+            <TodaysNews />
+          </section>
         </div>
 
-        {/* Today's Menus */}
-        <div className="mt-8">
-          <TodaysMenus />
-        </div>
-
-        {/* Coming Up Soon */}
-        <section className="mt-8">
-          <h2 className="community-heading text-3xl sm:text-4xl text-foreground mb-6">
+        {/* Coming Up Soon — visually connected to events */}
+        <section className="mt-6 pt-6 border-t border-border">
+          <h2 className="community-heading text-xl sm:text-2xl text-muted-foreground mb-4">
             Coming Up Soon
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
