@@ -35,7 +35,7 @@ const ArizmendiBoardWidget = () => {
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-handwritten leading-relaxed max-w-64">
-          {arizmendi?.special_item || "Check in-store for today's special!"}
+          {arizmendi?.special_item || "No pizza today"}
         </p>
       </CardContent>
     </Card>
