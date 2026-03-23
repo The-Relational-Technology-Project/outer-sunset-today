@@ -12,6 +12,7 @@ import { FloatingMyPlanButton } from "@/components/FloatingMyPlanButton";
 import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WeatherWidget } from "@/components/WeatherWidget";
+import { TodaysNews } from "@/components/TodaysNews";
 import NewsletterSubscribe from "@/components/NewsletterSubscribe";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -39,6 +40,9 @@ const Index = () => {
             {/* Today's Events */}
             <section>
               <WeatherWidget />
+              <div className="mt-4">
+                <TodaysNews />
+              </div>
               
               {isLoadingToday ? (
                 <div className="space-y-4 mt-4">
