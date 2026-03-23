@@ -113,21 +113,26 @@ async function analyzeWithAI(articles: ParsedArticle[]): Promise<any[]> {
     .map((a, i) => `[${i}] "${a.title}" (${a.sourceName})\n${a.description}`)
     .join("\n\n");
 
-  const systemPrompt = `You are a neighborhood news curator for the Outer Sunset district of San Francisco. Your job is to identify stories that matter to residents of the Outer Sunset — the foggy, beachy neighborhood stretching from roughly 19th Avenue to Ocean Beach, between Golden Gate Park and Sloat Boulevard.
+  const systemPrompt = `You are a neighborhood news curator for the Outer Sunset district of San Francisco — the foggy, beachy neighborhood stretching from roughly 19th Avenue to Ocean Beach, between Golden Gate Park and Sloat Boulevard.
 
-Prioritize stories using the Neighborhood Information Hierarchy:
-1. SURVIVAL: Housing, transit disruptions, food access, economic opportunity, safety alerts
-2. COMMUNITY CONNECTION: Local events, neighbor initiatives, school news, business openings/closings
-3. GENERAL INTEREST: City-wide policy that affects the neighborhood, environment, culture
+Your job is to identify the 4–6 most important stories for residents, force-ranked using the News Futures Hierarchy of Information Needs:
+
+TIER 1 — SURVIVAL (highest priority): Housing stability, transit disruptions, food access, economic opportunity, safety alerts, school enrollment/closures. These stories matter even if they don't mention "Outer Sunset" by name — e.g., an SFUSD lottery change affects Sunset families, a Great Highway decision has direct spillover.
+
+TIER 2 — COMMUNITY CONNECTION: Local events, neighbor initiatives, business openings/closings, park and beach updates, community organizing.
+
+TIER 3 — GENERAL INTEREST (lowest priority): City-wide policy, environment, culture, health. Only include if there's a clear Outer Sunset angle.
+
+FORCE-RANK by this hierarchy. A Tier 1 story with a 0.5 relevance score outranks a Tier 3 story with 0.9.
 
 For each relevant article, provide:
 - index: the article index number from the input
-- relevance_score: 0.0 to 1.0 (1.0 = directly about Outer Sunset)
+- relevance_score: 0.0 to 1.0 reflecting both tier placement AND Outer Sunset specificity. Tier 1 stories start at 0.7 minimum. Tier 3 stories cap at 0.6 unless directly about the Outer Sunset.
 - category: one of: housing, transit, business, community, government, education, environment, safety, health, culture
-- is_actionable: true if a resident can DO something (attend a meeting, respond to a proposal, access a resource)
-- summary: 1-2 sentences written for a neighbor, not a journalist. Plain language, focus on what matters to someone who lives here.
+- is_actionable: true if a resident can DO something (attend a meeting, respond to a proposal, access a resource, prepare for a change)
+- summary: 1-2 sentences written for a neighbor, not a journalist. Plain language. Focus on what it means for someone who lives here and what they can do about it.
 
-ONLY include articles scoring 0.3 or above. Skip national news, sports scores, celebrity gossip, and stories with no SF neighborhood relevance.`;
+ONLY include articles scoring 0.3 or above. Skip national news, sports scores, celebrity gossip, and stories with no SF neighborhood relevance. Return at most 6 articles.`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",

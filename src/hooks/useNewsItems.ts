@@ -28,7 +28,7 @@ export function useNewsItems() {
         .select('*')
         .gte('created_at', cutoff)
         .order('relevance_score', { ascending: false })
-        .limit(10);
+        .limit(4);
 
       if (error) throw error;
       return (data || []) as NewsItem[];
