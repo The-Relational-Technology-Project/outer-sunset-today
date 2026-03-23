@@ -12,6 +12,7 @@ import { FloatingMyPlanButton } from "@/components/FloatingMyPlanButton";
 import { useTodaysEvents, useUpcomingEvents, formatEventForCard } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WeatherWidget } from "@/components/WeatherWidget";
+import { TodaysNews } from "@/components/TodaysNews";
 import NewsletterSubscribe from "@/components/NewsletterSubscribe";
 import { SiteFooter } from "@/components/SiteFooter";
 
