@@ -40,6 +40,9 @@ const Index = () => {
             {/* Today's Events */}
             <section>
               <WeatherWidget />
+              <div className="mt-4">
+                <TodaysNews />
+              </div>
               
               {isLoadingToday ? (
                 <div className="space-y-4 mt-4">
