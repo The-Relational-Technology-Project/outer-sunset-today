@@ -59,13 +59,10 @@ export const TodaysNews = () => {
   return (
     <Card className="bg-paper border-cork shadow-bulletin">
       <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-3">
           <Newspaper className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground font-bulletin">Neighborhood News</h3>
+          <h3 className="text-sm font-bold text-foreground font-bulletin">Today's News</h3>
         </div>
-        <p className="text-[10px] text-muted-foreground mb-3 font-handwritten">
-          What matters in the Outer Sunset today
-        </p>
         <div>
           {newsItems.map((item) => (
             <NewsItemCard key={item.id} item={item} />
