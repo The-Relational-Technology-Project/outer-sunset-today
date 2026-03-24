@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar } from "lucide-react";
+import { Bell, Calendar } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 
