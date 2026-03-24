@@ -11,6 +11,7 @@ import PlanMyDay from "./pages/PlanMyDay";
 import Admin from "./pages/Admin";
 import PrivacyTerms from "./pages/PrivacyTerms";
 import Unsubscribe from "./pages/Unsubscribe";
+import Updates from "./pages/Updates";
 import NotFound from "./pages/NotFound";
 import { MyPlanProvider } from "./contexts/MyPlanContext";
 
