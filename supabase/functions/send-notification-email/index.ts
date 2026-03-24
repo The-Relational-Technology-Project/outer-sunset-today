@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  type: "event" | "contact" | "flyer" | "import";
+  type: "event" | "contact" | "flyer" | "import" | "custom_update";
   data: {
     title?: string;
     location?: string;
@@ -26,6 +26,10 @@ interface NotificationRequest {
     storage_path?: string;
     subject?: string;
     html?: string;
+    update_type?: string;
+    subscriber_email?: string;
+    subscriber_phone?: string;
+    preferred_channel?: string;
   };
 }
 
