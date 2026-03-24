@@ -11,6 +11,7 @@ import PlanMyDay from "./pages/PlanMyDay";
 import Admin from "./pages/Admin";
 import PrivacyTerms from "./pages/PrivacyTerms";
 import Unsubscribe from "./pages/Unsubscribe";
+import Updates from "./pages/Updates";
 import NotFound from "./pages/NotFound";
 import { MyPlanProvider } from "./contexts/MyPlanContext";
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/my-plan" element={<PlanMyDay />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/updates" element={<Updates />} />
             <Route path="/privacy-terms" element={<PrivacyTerms />} />
             <Route path="/unsubscribe/:token" element={<Unsubscribe />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

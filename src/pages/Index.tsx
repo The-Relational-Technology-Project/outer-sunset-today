@@ -35,9 +35,17 @@ const Index = () => {
         <div className="grid gap-6 lg:grid-cols-2 mt-8">
           {/* Today's Events */}
           <section>
-            <h2 className="community-heading text-2xl sm:text-3xl text-foreground mb-3">
-              Today's Events
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="community-heading text-2xl sm:text-3xl text-foreground">
+                Today's Events
+              </h2>
+              <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+                <Link to="/submit">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Submit an Event
+                </Link>
+              </Button>
+            </div>
             {isLoadingToday ? (
               <div className="space-y-3">
                 {[1, 2].map((i) => (
