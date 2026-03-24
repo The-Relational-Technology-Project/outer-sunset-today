@@ -297,10 +297,6 @@ const Updates = () => {
                   <CardContent className="p-4 flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bulletin font-bold text-foreground">{update.description}</p>
-                      <p className="text-xs text-muted-foreground font-handwritten mt-1 flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {update.subscriber_count} {update.subscriber_count === 1 ? "neighbor" : "neighbors"} subscribed
-                      </p>
                     </div>
                     <Button
                       size="sm"
