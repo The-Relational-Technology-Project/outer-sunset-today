@@ -59,6 +59,71 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_update_subscriptions: {
+        Row: {
+          created_at: string
+          custom_update_id: string
+          email: string | null
+          id: string
+          is_creator: boolean
+          messaging_opt_in: boolean
+          phone: string | null
+          preferred_channel: string
+        }
+        Insert: {
+          created_at?: string
+          custom_update_id: string
+          email?: string | null
+          id?: string
+          is_creator?: boolean
+          messaging_opt_in?: boolean
+          phone?: string | null
+          preferred_channel?: string
+        }
+        Update: {
+          created_at?: string
+          custom_update_id?: string
+          email?: string | null
+          id?: string
+          is_creator?: boolean
+          messaging_opt_in?: boolean
+          phone?: string | null
+          preferred_channel?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_update_subscriptions_custom_update_id_fkey"
+            columns: ["custom_update_id"]
+            isOneToOne: false
+            referencedRelation: "custom_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_updates: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_public: boolean
+          subscriber_count: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          is_public?: boolean
+          subscriber_count?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_public?: boolean
+          subscriber_count?: number
+        }
+        Relationships: []
+      }
       daily_menus: {
         Row: {
           category: string
@@ -341,6 +406,10 @@ export type Database = {
         Returns: undefined
       }
       increment_surf_count: { Args: never; Returns: number }
+      increment_update_subscriber_count: {
+        Args: { update_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
