@@ -42,7 +42,7 @@ serve(async (req) => {
     const { type, data }: NotificationRequest = await req.json();
     console.log("send-notification-email payload:", { type, data });
 
-    const notificationEmail = "joshuanesbit@gmail.com";
+    const notificationEmail = "josh@relationaltechproject.org";
     let subject = "";
     let html = "";
 
