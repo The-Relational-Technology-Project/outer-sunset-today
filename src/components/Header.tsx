@@ -46,11 +46,11 @@ export function Header() {
               <span className="ml-1">My Plan</span>
             </Button>
 
-            {/* Submit an Event */}
+            {/* Get Custom Updates */}
             <Button size="sm" asChild className="rounded-full bg-sunset-orange hover:bg-sunset-orange/90 text-white shadow-md px-4">
-              <Link to="/submit">
-                <Plus className="h-4 w-4 mr-1" />
-                Submit Event
+              <Link to="/updates">
+                <Bell className="h-4 w-4 mr-1" />
+                Get Custom Updates
               </Link>
             </Button>
           </div>
