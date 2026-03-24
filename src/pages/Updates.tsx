@@ -13,6 +13,7 @@ import { useCustomUpdates } from "@/hooks/useCustomUpdates";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HumanVerification } from "@/components/HumanVerification";
 
 const Updates = () => {
   const { data: updates = [], isLoading, refetch } = useCustomUpdates();
@@ -25,6 +26,8 @@ const Updates = () => {
   const [optIn, setOptIn] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(0);
 
   // Sign-up dialog state
   const [signUpUpdate, setSignUpUpdate] = useState<{ id: string; description: string } | null>(null);
@@ -33,17 +36,37 @@ const Updates = () => {
   const [suPhone, setSuPhone] = useState("");
   const [suOptIn, setSuOptIn] = useState(false);
   const [suSubmitting, setSuSubmitting] = useState(false);
+  const [suIsVerified, setSuIsVerified] = useState(false);
+  const [suResetTrigger, setSuResetTrigger] = useState(0);
+
+  const sendNotificationEmail = async (type: "new_update" | "existing_update", updateDescription: string, contactEmail?: string, contactPhone?: string, contactChannel?: string) => {
+    try {
+      await supabase.functions.invoke("send-notification-email", {
+        body: {
+          type: "custom_update",
+          data: {
+            update_type: type,
+            description: updateDescription,
+            subscriber_email: contactEmail || null,
+            subscriber_phone: contactPhone || null,
+            preferred_channel: contactChannel || null,
+          },
+        },
+      });
+    } catch (err) {
+      console.error("Failed to send notification email:", err);
+    }
+  };
 
   const handleRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
     if ((channel === "email" || channel === "both") && !email.trim()) return;
     if ((channel === "phone" || channel === "both") && !phone.trim()) return;
-    if (!optIn) return;
+    if (!optIn || !isVerified) return;
 
     setSubmitting(true);
     try {
-      // Insert the custom update
       const { data: newUpdate, error: updateError } = await supabase
         .from("custom_updates")
         .insert({ description: description.trim(), is_public: isPublic, subscriber_count: 1 })
@@ -51,18 +74,22 @@ const Updates = () => {
         .single();
       if (updateError) throw updateError;
 
-      // Insert the subscription
+      const subEmail = (channel === "email" || channel === "both") ? email.trim() : null;
+      const subPhone = (channel === "phone" || channel === "both") ? phone.trim() : null;
+
       const { error: subError } = await supabase
         .from("custom_update_subscriptions")
         .insert({
           custom_update_id: newUpdate.id,
-          email: (channel === "email" || channel === "both") ? email.trim() : null,
-          phone: (channel === "phone" || channel === "both") ? phone.trim() : null,
+          email: subEmail,
+          phone: subPhone,
           preferred_channel: channel,
           messaging_opt_in: true,
           is_creator: true,
         });
       if (subError) throw subError;
+
+      await sendNotificationEmail("new_update", description.trim(), subEmail || undefined, subPhone || undefined, channel);
 
       toast({ title: "Thanks for your request!", description: "We'll be in touch once your update is set up." });
       setDescription("");
@@ -71,6 +98,8 @@ const Updates = () => {
       setChannel("email");
       setOptIn(false);
       setIsPublic(true);
+      setIsVerified(false);
+      setResetTrigger(t => t + 1);
       refetch();
     } catch (err) {
       toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
@@ -83,24 +112,27 @@ const Updates = () => {
     if (!signUpUpdate) return;
     if ((suChannel === "email" || suChannel === "both") && !suEmail.trim()) return;
     if ((suChannel === "phone" || suChannel === "both") && !suPhone.trim()) return;
-    if (!suOptIn) return;
+    if (!suOptIn || !suIsVerified) return;
 
     setSuSubmitting(true);
     try {
+      const subEmail = (suChannel === "email" || suChannel === "both") ? suEmail.trim() : null;
+      const subPhone = (suChannel === "phone" || suChannel === "both") ? suPhone.trim() : null;
+
       const { error: subError } = await supabase
         .from("custom_update_subscriptions")
         .insert({
           custom_update_id: signUpUpdate.id,
-          email: (suChannel === "email" || suChannel === "both") ? suEmail.trim() : null,
-          phone: (suChannel === "phone" || suChannel === "both") ? suPhone.trim() : null,
+          email: subEmail,
+          phone: subPhone,
           preferred_channel: suChannel,
           messaging_opt_in: true,
           is_creator: false,
         });
       if (subError) throw subError;
 
-      // Increment subscriber count
       await supabase.rpc("increment_update_subscriber_count", { update_id: signUpUpdate.id });
+      await sendNotificationEmail("existing_update", signUpUpdate.description, subEmail || undefined, subPhone || undefined, suChannel);
 
       toast({ title: "You're signed up!", description: "We'll get this update to you soon." });
       setSignUpUpdate(null);
@@ -108,6 +140,8 @@ const Updates = () => {
       setSuPhone("");
       setSuChannel("email");
       setSuOptIn(false);
+      setSuIsVerified(false);
+      setSuResetTrigger(t => t + 1);
       refetch();
     } catch (err) {
       toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
@@ -125,6 +159,7 @@ const Updates = () => {
     setPhone,
     optIn,
     setOptIn,
+    formId,
   }: {
     channel: string;
     setChannel: (v: string) => void;
@@ -134,43 +169,44 @@ const Updates = () => {
     setPhone: (v: string) => void;
     optIn: boolean;
     setOptIn: (v: boolean) => void;
+    formId: string;
   }) => (
     <div className="space-y-4">
       <div>
         <Label className="text-sm font-bulletin font-bold text-foreground">How should we reach you?</Label>
         <RadioGroup value={channel} onValueChange={setChannel} className="flex gap-4 mt-2">
           <div className="flex items-center gap-2">
-            <RadioGroupItem value="email" id={`ch-email-${optIn}`} />
-            <Label htmlFor={`ch-email-${optIn}`} className="text-sm">Email</Label>
+            <RadioGroupItem value="email" id={`ch-email-${formId}`} />
+            <Label htmlFor={`ch-email-${formId}`} className="text-sm">Email</Label>
           </div>
           <div className="flex items-center gap-2">
-            <RadioGroupItem value="phone" id={`ch-phone-${optIn}`} />
-            <Label htmlFor={`ch-phone-${optIn}`} className="text-sm">Text</Label>
+            <RadioGroupItem value="phone" id={`ch-phone-${formId}`} />
+            <Label htmlFor={`ch-phone-${formId}`} className="text-sm">Text</Label>
           </div>
           <div className="flex items-center gap-2">
-            <RadioGroupItem value="both" id={`ch-both-${optIn}`} />
-            <Label htmlFor={`ch-both-${optIn}`} className="text-sm">Both</Label>
+            <RadioGroupItem value="both" id={`ch-both-${formId}`} />
+            <Label htmlFor={`ch-both-${formId}`} className="text-sm">Both</Label>
           </div>
         </RadioGroup>
       </div>
 
       {(channel === "email" || channel === "both") && (
         <div>
-          <Label htmlFor="email-field" className="text-sm">Email</Label>
-          <Input id="email-field" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="mt-1" />
+          <Label htmlFor={`email-${formId}`} className="text-sm">Email</Label>
+          <Input id={`email-${formId}`} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="mt-1" />
         </div>
       )}
 
       {(channel === "phone" || channel === "both") && (
         <div>
-          <Label htmlFor="phone-field" className="text-sm">Phone number</Label>
-          <Input id="phone-field" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(415) 555-1234" className="mt-1" />
+          <Label htmlFor={`phone-${formId}`} className="text-sm">Phone number</Label>
+          <Input id={`phone-${formId}`} type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(415) 555-1234" className="mt-1" />
         </div>
       )}
 
       <div className="flex items-start gap-2">
-        <Checkbox id="opt-in" checked={optIn} onCheckedChange={v => setOptIn(v === true)} className="mt-0.5" />
-        <Label htmlFor="opt-in" className="text-sm text-muted-foreground leading-tight">
+        <Checkbox id={`opt-in-${formId}`} checked={optIn} onCheckedChange={v => setOptIn(v === true)} className="mt-0.5" />
+        <Label htmlFor={`opt-in-${formId}`} className="text-sm text-muted-foreground leading-tight">
           I agree to receive updates via my selected channel(s)
         </Label>
       </div>
@@ -216,6 +252,7 @@ const Updates = () => {
                 email={email} setEmail={setEmail}
                 phone={phone} setPhone={setPhone}
                 optIn={optIn} setOptIn={setOptIn}
+                formId="request"
               />
 
               <div className="flex items-start gap-2">
@@ -225,7 +262,9 @@ const Updates = () => {
                 </Label>
               </div>
 
-              <Button type="submit" disabled={submitting || !description.trim() || !optIn} className="w-full bg-sunset-orange hover:bg-sunset-orange/90 text-white">
+              <HumanVerification onVerified={setIsVerified} resetTrigger={resetTrigger} />
+
+              <Button type="submit" disabled={submitting || !description.trim() || !optIn || !isVerified} className="w-full bg-sunset-orange hover:bg-sunset-orange/90 text-white">
                 <Send className="h-4 w-4 mr-2" />
                 {submitting ? "Submitting..." : "Submit Request"}
               </Button>
@@ -266,7 +305,11 @@ const Updates = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setSignUpUpdate({ id: update.id, description: update.description })}
+                      onClick={() => {
+                        setSignUpUpdate({ id: update.id, description: update.description });
+                        setSuIsVerified(false);
+                        setSuResetTrigger(t => t + 1);
+                      }}
                       className="shrink-0"
                     >
                       Sign me up
@@ -300,10 +343,12 @@ const Updates = () => {
               email={suEmail} setEmail={setSuEmail}
               phone={suPhone} setPhone={setSuPhone}
               optIn={suOptIn} setOptIn={setSuOptIn}
+              formId="signup"
             />
+            <HumanVerification onVerified={setSuIsVerified} resetTrigger={suResetTrigger} />
             <Button
               onClick={handleSignUp}
-              disabled={suSubmitting || !suOptIn}
+              disabled={suSubmitting || !suOptIn || !suIsVerified}
               className="w-full bg-sunset-orange hover:bg-sunset-orange/90 text-white"
             >
               {suSubmitting ? "Signing up..." : "Sign me up"}

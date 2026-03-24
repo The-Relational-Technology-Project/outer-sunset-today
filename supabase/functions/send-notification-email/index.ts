@@ -92,6 +92,22 @@ serve(async (req) => {
         html = data.html || "<p>Import completed.</p>";
         break;
 
+      case "custom_update":
+        const isNew = data.update_type === "new_update";
+        subject = isNew
+          ? `📋 New Custom Update Request: ${data.description?.slice(0, 60)}`
+          : `📋 New Signup for Update: ${data.description?.slice(0, 60)}`;
+        html = `
+          <h1>${isNew ? "New Custom Update Requested" : "Someone Signed Up for an Existing Update"}</h1>
+          <p><strong>Update:</strong> ${data.description}</p>
+          <p><strong>Contact Email:</strong> ${data.subscriber_email || "Not provided"}</p>
+          <p><strong>Contact Phone:</strong> ${data.subscriber_phone || "Not provided"}</p>
+          <p><strong>Preferred Channel:</strong> ${data.preferred_channel || "Not specified"}</p>
+          <hr />
+          <p><em>Visit your admin dashboard for details.</em></p>
+        `;
+        break;
+
       default:
         throw new Error(`Unknown notification type: ${type}`);
     }
