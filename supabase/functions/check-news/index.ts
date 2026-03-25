@@ -113,7 +113,7 @@ async function analyzeWithClaude(articles: ParsedArticle[]): Promise<any[]> {
 
 This site, Outer Sunset Today, exists to help neighbors stay informed about what matters most in their daily lives. It is NOT a news site — it is a community bulletin board. The tone is calm, helpful, and neighborly.
 
-SELECTION: Choose exactly 4 stories, force-ranked using the News Futures Hierarchy of Information Needs:
+SELECTION: Choose between 1 and 4 stories — only include stories that genuinely matter to Outer Sunset / Richmond neighbors. It is BETTER to return 1 great story than 4 mediocre ones. Every story must score at least 0.6 relevance. Force-rank using the News Futures Hierarchy of Information Needs:
 
 TIER 1 — BASIC NEEDS & SAFETY (highest priority):
 Housing stability, rent/eviction policy, transit disruptions (N-Judah, L-Taraval, 5-Fulton, 28-19th Ave, 29-Sunset), food access, economic opportunity, safety alerts, school enrollment/closures, healthcare access. These stories matter even if they don't name the Sunset/Richmond — e.g., an SFUSD policy change affects Sunset families; a Great Highway decision has direct spillover.
