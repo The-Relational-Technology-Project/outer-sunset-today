@@ -297,7 +297,8 @@ serve(async (req) => {
       message: "News check complete",
       totalFetched: articles.length,
       newArticles: newArticles.length,
-      claudeRelevant: claudeResults.length,
+      claudeReturned: claudeResults.length,
+      passedThreshold: relevantResults.length,
       inserted: insertedCount,
     };
 
