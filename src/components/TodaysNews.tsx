@@ -15,7 +15,7 @@ function NewsItemCard({ item }: { item: NewsItem }) {
           rel="noopener noreferrer"
           className="text-sm font-medium text-foreground hover:text-primary transition-colors inline-flex items-start gap-1 group leading-snug"
         >
-          <span className="group-hover:underline">{item.title}</span>
+          <span className="group-hover:underline">{item.display_title || item.title}</span>
           <ExternalLink className="h-3 w-3 mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
         </a>
         {item.summary && (

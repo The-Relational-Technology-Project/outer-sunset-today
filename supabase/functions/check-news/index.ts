@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,8 +30,6 @@ async function hashString(str: string): Promise<string> {
 
 function parseRSSFeed(xml: string, sourceName: string): ParsedArticle[] {
   const articles: ParsedArticle[] = [];
-
-  // Simple regex-based XML parsing for RSS items
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
   let match;
 
@@ -88,7 +86,6 @@ async function fetchRSSArticles(hoursBack: number = 48): Promise<ParsedArticle[]
             allArticles.push(article);
           }
         } else {
-          // No date? Include it (might be recent)
           allArticles.push(article);
         }
       }
@@ -102,9 +99,9 @@ async function fetchRSSArticles(hoursBack: number = 48): Promise<ParsedArticle[]
   return allArticles;
 }
 
-async function analyzeWithAI(articles: ParsedArticle[]): Promise<any[]> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+async function analyzeWithClaude(articles: ParsedArticle[]): Promise<any[]> {
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
   if (articles.length === 0) return [];
 
@@ -112,90 +109,107 @@ async function analyzeWithAI(articles: ParsedArticle[]): Promise<any[]> {
     .map((a, i) => `[${i}] "${a.title}" (${a.sourceName})\n${a.description}`)
     .join("\n\n");
 
-  const systemPrompt = `You are a neighborhood news curator for the Outer Sunset district of San Francisco — the foggy, beachy neighborhood stretching from roughly 19th Avenue to Ocean Beach, between Golden Gate Park and Sloat Boulevard.
+  const systemPrompt = `You are a neighborhood news curator for the Outer Sunset and Richmond districts of San Francisco. Your audience lives in the foggy, beachy neighborhoods stretching from roughly 19th Avenue to Ocean Beach.
 
-Your job is to identify the 4–6 most important stories for residents, force-ranked using the News Futures Hierarchy of Information Needs:
+This site, Outer Sunset Today, exists to help neighbors stay informed about what matters most in their daily lives. It is NOT a news site — it is a community bulletin board. The tone is calm, helpful, and neighborly.
 
-TIER 1 — SURVIVAL (highest priority): Housing stability, transit disruptions, food access, economic opportunity, safety alerts, school enrollment/closures. These stories matter even if they don't mention "Outer Sunset" by name — e.g., an SFUSD lottery change affects Sunset families, a Great Highway decision has direct spillover.
+SELECTION: Choose exactly 4 stories, force-ranked using the News Futures Hierarchy of Information Needs:
 
-TIER 2 — COMMUNITY CONNECTION: Local events, neighbor initiatives, business openings/closings, park and beach updates, community organizing.
+TIER 1 — BASIC NEEDS & SAFETY (highest priority):
+Housing stability, rent/eviction policy, transit disruptions (N-Judah, L-Taraval, 5-Fulton, 28-19th Ave, 29-Sunset), food access, economic opportunity, safety alerts, school enrollment/closures, healthcare access. These stories matter even if they don't name the Sunset/Richmond — e.g., an SFUSD policy change affects Sunset families; a Great Highway decision has direct spillover.
 
-TIER 3 — GENERAL INTEREST (lowest priority): City-wide policy, environment, culture, health. Only include if there's a clear Outer Sunset angle.
+TIER 2 — CIVIC PARTICIPATION:
+City council votes, planning commission hearings, ballot measures, public comment periods, community meetings, neighborhood association actions. Prioritize items where a resident can actually participate or where a decision directly affects the Sunset/Richmond.
 
-FORCE-RANK by this hierarchy. A Tier 1 story with a 0.5 relevance score outranks a Tier 3 story with 0.9.
+TIER 3 — COMMUNITY CONNECTION:
+Local events, neighbor initiatives, business openings/closings, park and beach updates, community organizing, mutual aid.
 
-For each relevant article, provide:
-- index: the article index number from the input
-- relevance_score: 0.0 to 1.0 reflecting both tier placement AND Outer Sunset specificity. Tier 1 stories start at 0.7 minimum. Tier 3 stories cap at 0.6 unless directly about the Outer Sunset.
-- category: one of: housing, transit, business, community, government, education, environment, safety, health, culture
-- is_actionable: true if a resident can DO something (attend a meeting, respond to a proposal, access a resource, prepare for a change)
-- summary: 1-2 sentences written for a neighbor, not a journalist. Plain language. Focus on what it means for someone who lives here and what they can do about it.
+TIER 4 — GENERAL INTEREST (lowest priority):
+City-wide policy, environment, culture, health. Only include if there's a clear Sunset/Richmond angle.
 
-ONLY include articles scoring 0.3 or above. Skip national news, sports scores, celebrity gossip, and stories with no SF neighborhood relevance. Return at most 6 articles.`;
+FORCE-RANK by tier. A Tier 1 story always outranks a Tier 3 story regardless of other scores. Within a tier, prefer stories that are more hyperlocal to the Sunset and Richmond districts.
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+HEADLINE REWRITING:
+For each selected article, rewrite the headline to be:
+- Informative, not sensationalist or clickbait
+- Focused on what happened and what it means for neighbors
+- Free of alarm words ("SHOCKING", "OUTRAGE"), emotional triggers, or question-bait ("Is your neighborhood safe?")
+- Written as if you're telling a neighbor over coffee
+- Under 80 characters
+- Plain language, no jargon
+
+For each article, provide:
+- index: article index from input
+- display_title: your rewritten headline
+- relevance_score: 0.0–1.0 (Tier 1 starts at 0.7; Tier 4 caps at 0.5)
+- category: housing | transit | business | community | government | education | environment | safety | health | culture
+- is_actionable: true if a resident can DO something
+- summary: 1–2 sentences for a neighbor. Plain language. What it means here, what they can do.
+
+Return exactly 4 articles. Skip national news, sports, celebrity, and stories with no SF neighborhood relevance.`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-pro",
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      system: systemPrompt,
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Analyze these articles for Outer Sunset relevance:\n\n${articlesText}` },
+        { role: "user", content: `Analyze these articles for Outer Sunset/Richmond relevance:\n\n${articlesText}` },
       ],
       tools: [
         {
-          type: "function",
-          function: {
-            name: "submit_curated_news",
-            description: "Submit the curated list of relevant news articles",
-            parameters: {
-              type: "object",
-              properties: {
-                articles: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      index: { type: "number" },
-                      relevance_score: { type: "number" },
-                      category: { type: "string", enum: ["housing", "transit", "business", "community", "government", "education", "environment", "safety", "health", "culture"] },
-                      is_actionable: { type: "boolean" },
-                      summary: { type: "string" },
-                    },
-                    required: ["index", "relevance_score", "category", "is_actionable", "summary"],
-                    additionalProperties: false,
+          name: "submit_curated_news",
+          description: "Submit the curated list of relevant news articles",
+          input_schema: {
+            type: "object",
+            properties: {
+              articles: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    index: { type: "number" },
+                    display_title: { type: "string" },
+                    relevance_score: { type: "number" },
+                    category: { type: "string", enum: ["housing", "transit", "business", "community", "government", "education", "environment", "safety", "health", "culture"] },
+                    is_actionable: { type: "boolean" },
+                    summary: { type: "string" },
                   },
+                  required: ["index", "display_title", "relevance_score", "category", "is_actionable", "summary"],
                 },
               },
-              required: ["articles"],
-              additionalProperties: false,
             },
+            required: ["articles"],
           },
         },
       ],
-      tool_choice: { type: "function", function: { name: "submit_curated_news" } },
+      tool_choice: { type: "tool", name: "submit_curated_news" },
     }),
   });
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error("AI gateway error:", response.status, errText);
-    throw new Error(`AI gateway error: ${response.status}`);
+    console.error("Claude API error:", response.status, errText);
+    throw new Error(`Claude API error: ${response.status}`);
   }
 
   const data = await response.json();
-  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
 
-  if (!toolCall) {
-    console.warn("No tool call in AI response");
+  // Claude returns tool use in content array
+  const toolUseBlock = data.content?.find((block: any) => block.type === "tool_use");
+
+  if (!toolUseBlock) {
+    console.warn("No tool_use block in Claude response");
     return [];
   }
 
-  const parsed = JSON.parse(toolCall.function.arguments);
-  return parsed.articles || [];
+  return toolUseBlock.input?.articles || [];
 }
 
 serve(async (req) => {
@@ -242,19 +256,20 @@ serve(async (req) => {
       });
     }
 
-    // Send to AI for analysis
-    const aiResults = await analyzeWithAI(newArticles.map((h) => h.article));
-    console.log(`AI flagged ${aiResults.length} relevant articles`);
+    // Send to Claude for analysis
+    const claudeResults = await analyzeWithClaude(newArticles.map((h) => h.article));
+    console.log(`Claude flagged ${claudeResults.length} relevant articles`);
 
     // Upsert relevant articles
     let insertedCount = 0;
-    for (const result of aiResults) {
+    for (const result of claudeResults) {
       const source = newArticles[result.index];
       if (!source) continue;
 
       const { error } = await supabase.from("news_items").upsert(
         {
           title: source.article.title,
+          display_title: result.display_title,
           source_name: source.article.sourceName,
           source_url: source.article.link,
           article_hash: source.hash,
@@ -278,7 +293,7 @@ serve(async (req) => {
       message: "News check complete",
       totalFetched: articles.length,
       newArticles: newArticles.length,
-      aiRelevant: aiResults.length,
+      claudeRelevant: claudeResults.length,
       inserted: insertedCount,
     };
 
