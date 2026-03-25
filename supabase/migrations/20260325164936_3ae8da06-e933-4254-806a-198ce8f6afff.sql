@@ -1,0 +1,1 @@
+DELETE FROM public.news_items WHERE display_title IS NULL;
