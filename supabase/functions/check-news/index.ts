@@ -141,12 +141,12 @@ For each selected article, rewrite the headline to be:
 For each article, provide:
 - index: article index from input
 - display_title: your rewritten headline
-- relevance_score: 0.0–1.0 (Tier 1 starts at 0.7; Tier 4 caps at 0.5)
+- relevance_score: 0.0–1.0 (Tier 1 starts at 0.7; Tier 4 caps at 0.5). MINIMUM 0.6 to be included.
 - category: housing | transit | business | community | government | education | environment | safety | health | culture
 - is_actionable: true if a resident can DO something
 - summary: 1–2 sentences for a neighbor. Plain language. What it means here, what they can do.
 
-Return exactly 4 articles. Skip national news, sports, celebrity, and stories with no SF neighborhood relevance.`;
+Return 1–4 articles. Only include stories scoring 0.6 or above. If only 1 story clears that bar, return just 1. Skip national news, sports, celebrity, arts/culture reviews with no neighborhood angle, and stories with no SF neighborhood relevance.`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
