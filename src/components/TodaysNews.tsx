@@ -5,10 +5,12 @@ import { useNewsItems, NewsItem } from "@/hooks/useNewsItems";
 import { ExternalLink } from "lucide-react";
 
 function NewsItemCard({ item }: { item: NewsItem }) {
+  // Show a single short sentence from the summary (first sentence only)
+  const shortSummary = item.summary?.split(/\.(\s|$)/)?.[0];
+
   return (
     <Card className="bulletin-card">
-      <CardContent className="p-4">
-        <p className="text-[10px] text-muted-foreground mb-1">{item.source_name}</p>
+      <CardContent className="p-3">
         <a
           href={item.source_url}
           target="_blank"
@@ -18,11 +20,10 @@ function NewsItemCard({ item }: { item: NewsItem }) {
           <span className="group-hover:underline">{item.display_title || item.title}</span>
           <ExternalLink className="h-3 w-3 mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
         </a>
-        {item.summary && (
-          <p className="text-xs text-muted-foreground mt-1.5 font-handwritten leading-relaxed">
-            {item.summary}
-          </p>
+        {shortSummary && (
+          <p className="text-xs text-muted-foreground mt-1 leading-snug">{shortSummary}.</p>
         )}
+        <p className="text-[10px] text-muted-foreground mt-1">{item.source_name}</p>
       </CardContent>
     </Card>
   );
