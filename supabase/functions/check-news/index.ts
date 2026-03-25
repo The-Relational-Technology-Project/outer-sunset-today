@@ -258,11 +258,15 @@ serve(async (req) => {
 
     // Send to Claude for analysis
     const claudeResults = await analyzeWithClaude(newArticles.map((h) => h.article));
-    console.log(`Claude flagged ${claudeResults.length} relevant articles`);
+    console.log(`Claude returned ${claudeResults.length} articles`);
+
+    // Filter out articles below relevance threshold (server-side safety net)
+    const relevantResults = claudeResults.filter((r: any) => r.relevance_score >= 0.6);
+    console.log(`${relevantResults.length} articles passed 0.6 relevance threshold`);
 
     // Upsert relevant articles
     let insertedCount = 0;
-    for (const result of claudeResults) {
+    for (const result of relevantResults) {
       const source = newArticles[result.index];
       if (!source) continue;
 
