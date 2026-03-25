@@ -113,7 +113,7 @@ async function analyzeWithClaude(articles: ParsedArticle[]): Promise<any[]> {
 
 This site, Outer Sunset Today, exists to help neighbors stay informed about what matters most in their daily lives. It is NOT a news site — it is a community bulletin board. The tone is calm, helpful, and neighborly.
 
-SELECTION: Choose exactly 4 stories, force-ranked using the News Futures Hierarchy of Information Needs:
+SELECTION: Choose between 1 and 4 stories — only include stories that genuinely matter to Outer Sunset / Richmond neighbors. It is BETTER to return 1 great story than 4 mediocre ones. Every story must score at least 0.6 relevance. Force-rank using the News Futures Hierarchy of Information Needs:
 
 TIER 1 — BASIC NEEDS & SAFETY (highest priority):
 Housing stability, rent/eviction policy, transit disruptions (N-Judah, L-Taraval, 5-Fulton, 28-19th Ave, 29-Sunset), food access, economic opportunity, safety alerts, school enrollment/closures, healthcare access. These stories matter even if they don't name the Sunset/Richmond — e.g., an SFUSD policy change affects Sunset families; a Great Highway decision has direct spillover.
@@ -141,12 +141,12 @@ For each selected article, rewrite the headline to be:
 For each article, provide:
 - index: article index from input
 - display_title: your rewritten headline
-- relevance_score: 0.0–1.0 (Tier 1 starts at 0.7; Tier 4 caps at 0.5)
+- relevance_score: 0.0–1.0 (Tier 1 starts at 0.7; Tier 4 caps at 0.5). MINIMUM 0.6 to be included.
 - category: housing | transit | business | community | government | education | environment | safety | health | culture
 - is_actionable: true if a resident can DO something
 - summary: 1–2 sentences for a neighbor. Plain language. What it means here, what they can do.
 
-Return exactly 4 articles. Skip national news, sports, celebrity, and stories with no SF neighborhood relevance.`;
+Return 1–4 articles. Only include stories scoring 0.6 or above. If only 1 story clears that bar, return just 1. Skip national news, sports, celebrity, arts/culture reviews with no neighborhood angle, and stories with no SF neighborhood relevance.`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -258,11 +258,15 @@ serve(async (req) => {
 
     // Send to Claude for analysis
     const claudeResults = await analyzeWithClaude(newArticles.map((h) => h.article));
-    console.log(`Claude flagged ${claudeResults.length} relevant articles`);
+    console.log(`Claude returned ${claudeResults.length} articles`);
+
+    // Filter out articles below relevance threshold (server-side safety net)
+    const relevantResults = claudeResults.filter((r: any) => r.relevance_score >= 0.6);
+    console.log(`${relevantResults.length} articles passed 0.6 relevance threshold`);
 
     // Upsert relevant articles
     let insertedCount = 0;
-    for (const result of claudeResults) {
+    for (const result of relevantResults) {
       const source = newArticles[result.index];
       if (!source) continue;
 
@@ -293,7 +297,8 @@ serve(async (req) => {
       message: "News check complete",
       totalFetched: articles.length,
       newArticles: newArticles.length,
-      claudeRelevant: claudeResults.length,
+      claudeReturned: claudeResults.length,
+      passedThreshold: relevantResults.length,
       inserted: insertedCount,
     };
 
