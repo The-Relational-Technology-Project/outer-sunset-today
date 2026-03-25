@@ -1,0 +1,1 @@
+ALTER TABLE public.news_items ADD COLUMN display_title text;

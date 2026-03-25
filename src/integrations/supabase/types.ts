@@ -277,6 +277,7 @@ export type Database = {
           article_hash: string
           category: string | null
           created_at: string
+          display_title: string | null
           helpful_count: number
           id: string
           is_actionable: boolean | null
@@ -292,6 +293,7 @@ export type Database = {
           article_hash: string
           category?: string | null
           created_at?: string
+          display_title?: string | null
           helpful_count?: number
           id?: string
           is_actionable?: boolean | null
@@ -307,6 +309,7 @@ export type Database = {
           article_hash?: string
           category?: string | null
           created_at?: string
+          display_title?: string | null
           helpful_count?: number
           id?: string
           is_actionable?: boolean | null
