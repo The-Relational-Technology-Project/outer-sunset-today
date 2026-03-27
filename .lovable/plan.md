@@ -1,27 +1,16 @@
 
 
-## Twilio SMS Compliance Updates
+## Deduplicate News Stories Across Publications
 
-Two changes to pass Twilio Toll-Free Verification: update consent language in the sign-up forms and add an SMS section to the privacy page.
+Add an instruction to the Claude system prompt telling it to detect when multiple articles cover the same underlying story and only select one (the best source). This is the simplest and most effective approach since Claude already analyzes all articles together.
 
-### 1. Update `ChannelFields` component in `/updates` (src/pages/Updates.tsx)
+### Change
 
-Make the consent checkbox text dynamic based on the selected channel:
+**File: `supabase/functions/check-news/index.ts`**
 
-- **"Text" or "Both" selected**: "I agree to receive text messages from Outer Sunset Today about the updates I requested. Msg frequency varies. Msg & data rates may apply. Reply STOP to cancel, HELP for help."
-- **"Email" only**: "I agree to receive email updates from Outer Sunset Today about the updates I requested."
+Add to the system prompt, after the current selection instructions:
 
-Ensure the checkbox is never pre-checked (already the case — `optIn` defaults to `false`). It's already required for form submission.
+> DEDUPLICATION: If multiple articles cover the same underlying story or event, select only ONE — the version with the most useful detail for neighbors. Do not return duplicate stories even if they come from different publications.
 
-### 2. Add "Text Messages" section to Privacy & Terms (src/pages/PrivacyTerms.tsx)
-
-Insert a new section between "Privacy" and "Terms of Use" with this content:
-
-> **Text Messages**
->
-> If you sign up for text message updates, we will only text you about the specific updates you requested. Message frequency varies depending on what you signed up for. Message and data rates may apply. You can text STOP at any time to stop receiving messages, or text HELP for support. We will not share your phone number with anyone. To get help, you can also email us at hello@relationaltechproject.org.
-
-### Files changed
-- `src/pages/Updates.tsx` — dynamic consent text in `ChannelFields`
-- `src/pages/PrivacyTerms.tsx` — new "Text Messages" section
+This goes right before the "HEADLINE REWRITING" section. No database or frontend changes needed.
 
