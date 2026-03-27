@@ -129,6 +129,8 @@ City-wide policy, environment, culture, health. Only include if there's a clear 
 
 FORCE-RANK by tier. A Tier 1 story always outranks a Tier 3 story regardless of other scores. Within a tier, prefer stories that are more hyperlocal to the Sunset and Richmond districts.
 
+DEDUPLICATION: If multiple articles cover the same underlying story or event, select only ONE — the version with the most useful detail for neighbors. Do not return duplicate stories even if they come from different publications.
+
 HEADLINE REWRITING:
 For each selected article, rewrite the headline to be:
 - Informative, not sensationalist or clickbait
