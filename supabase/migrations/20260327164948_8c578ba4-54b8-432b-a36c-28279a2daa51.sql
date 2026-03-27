@@ -1,0 +1,1 @@
+DELETE FROM public.news_items WHERE id IN ('a387b48f-0b0e-4668-99e9-5faf6f892d82', 'f916dc56-8289-4831-a33a-7344c6d7c8eb', '74177b5f-6dec-44e6-b147-831c3e02df7b');
