@@ -42,6 +42,28 @@ const PrivacyTerms = () => {
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-3">
+                  Text Messages
+                </h2>
+                <div className="space-y-3 text-muted-foreground">
+                  <p>
+                    If you sign up for text message updates, we will only text you about the specific updates you requested.
+                    Message frequency varies depending on what you signed up for. Message and data rates may apply.
+                  </p>
+                  <p>
+                    You can text STOP at any time to stop receiving messages, or text HELP for support.
+                    We will not share your phone number with anyone.
+                  </p>
+                  <p>
+                    To get help, you can also email us at{" "}
+                    <a href="mailto:hello@relationaltechproject.org" className="text-primary hover:underline">
+                      hello@relationaltechproject.org
+                    </a>.
+                  </p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-foreground mb-3">
                   Terms of Use
                 </h2>
                 <div className="space-y-3 text-muted-foreground">

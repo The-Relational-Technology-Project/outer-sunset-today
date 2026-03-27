@@ -207,7 +207,9 @@ const Updates = () => {
       <div className="flex items-start gap-2">
         <Checkbox id={`opt-in-${formId}`} checked={optIn} onCheckedChange={v => setOptIn(v === true)} className="mt-0.5" />
         <Label htmlFor={`opt-in-${formId}`} className="text-sm text-muted-foreground leading-tight">
-          I agree to receive updates via my selected channel(s)
+          {channel === "phone" || channel === "both"
+            ? "I agree to receive text messages from Outer Sunset Today about the updates I requested. Msg frequency varies. Msg & data rates may apply. Reply STOP to cancel, HELP for help."
+            : "I agree to receive email updates from Outer Sunset Today about the updates I requested."}
         </Label>
       </div>
     </div>
