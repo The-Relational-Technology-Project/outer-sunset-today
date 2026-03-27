@@ -1,0 +1,1 @@
+UPDATE events SET event_date = '2026-03-27', start_time = '2026-03-27T17:00:00-07:00', end_time = '2026-03-27T21:00:00-07:00' WHERE id = '98a4c512-f39e-47b8-96a2-e194c0060d4f';
