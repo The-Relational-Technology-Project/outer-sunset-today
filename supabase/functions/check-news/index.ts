@@ -131,6 +131,8 @@ FORCE-RANK by tier. A Tier 1 story always outranks a Tier 3 story regardless of 
 
 DEDUPLICATION: If multiple articles cover the same underlying story or event, select only ONE — the version with the most useful detail for neighbors. Do not return duplicate stories even if they come from different publications.
 
+CRIME & SAFETY: Only include crime stories if they represent an ACTIVE, ONGOING safety concern for neighbors — e.g., a suspect at large, a hazard in the area, or a safety advisory. Do NOT include stories about past crimes (arrests made, investigations concluded, court proceedings) unless there is a clear "what neighbors should do now" angle. A shooting that happened last week with a suspect already arrested is NOT relevant. A pattern of break-ins with police asking for vigilance IS relevant.
+
 HEADLINE REWRITING:
 For each selected article, rewrite the headline to be:
 - Informative, not sensationalist or clickbait
