@@ -1,0 +1,1 @@
+UPDATE daily_menus SET special_item = 'mushrooms, leeks, smoked gouda, garlic oil, p&p' WHERE menu_date = '2026-03-31' AND restaurant = 'Arizmendi Bakery';
