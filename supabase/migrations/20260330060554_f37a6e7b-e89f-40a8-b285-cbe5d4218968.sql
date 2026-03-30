@@ -1,0 +1,1 @@
+DELETE FROM news_items WHERE id = '7635d378-dfc8-4ba4-a8bd-5916218132fd';
