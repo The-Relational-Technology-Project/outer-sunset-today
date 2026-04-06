@@ -33,6 +33,7 @@ const PIZZA_SOURCES = [
 // Search sources - run with primary batch
 const SEARCH_SOURCES = [
   { name: "Outer Sunset Farmers Market", query: "Outer Sunset Farmers Market San Francisco schedule" },
+  { name: "Funcheap SF Sunset Events", query: "Funcheap SF Outer Sunset community events this week" },
 ];
 
 // Get date range: This Sunday through next Sunday
