@@ -1,32 +1,21 @@
 
 
-## Add Missing Events & Clean Up Duplicate
+## Add Arizmendi Pizza Menus for April 21–26
 
-### 1. Remove duplicate PloverFest
+The database has no pizza menus beyond today (Sun Apr 19). Arizmendi is closed Mon Apr 20, then reopens Tue Apr 21. From the screenshot, here are the specials to add:
 
-Delete one of the two PloverFest entries for Apr 12. Keep the one with the more descriptive title ("PloverFest: Sunset Dunes 1st Birthday & Community Music Festival").
+| Date | Day | Special |
+|---|---|---|
+| Apr 21 | Tue | asparagus, feta cheese, red onions, lemon vinaigrette |
+| Apr 22 | Wed | cherry tomatoes, roasted garlic, fontina, rosemary oil, p&p |
+| Apr 23 | Thu | mushrooms, fresh herbs, goat cheese, garlic oil, p&p |
+| Apr 24 | Fri | 'Quattro Fromaggio' housemade sauce w/asiago, feta, parmesan & romano, thyme oil, parsley |
+| Apr 25 | Sat | cherry tomatoes, spinach, manchego, garlic oil, parmesan |
+| Apr 26 | Sun | shiitake, portabella and button mushrooms with sesame-ginger-garlic vinaigrette |
 
-### 2. Add 5 missing Sunset Commons events
+Mon Apr 20 — skip (closed).
 
-Call the `add-events` edge function with:
-- **Story Swap: The Great Book Exchange** — Apr 9, 16:00–18:00, Sunset Commons, community
-- **Scrap & Yap Club - Junk Journal Evening** — Apr 9, 18:30–20:30, Sunset Commons, art
-- **CRAFTCHELLA W1** — Apr 10, 14:00–17:30, Sunset Commons, art
-- **Write & Delight: Calligraphy for Beginners** — Apr 10, 18:00–20:00, Sunset Commons, art
-- **Beginner's Guide to Mah Jong** — Apr 12, 15:00–17:00, Sunset Commons, community
-
-### 3. Add 2 missing community events
-
-- **Outer Sunset Morning Cleanup + Free Coffee** — Apr 6, 08:00–09:00, Andytown Coffee (3629 Taraval), volunteer
-- **Inner Sunset Flea Market** — Apr 12, 10:00–16:00, Irving St (9th-11th Ave), market
-
-### 4. Add Funcheap / morning cleanup to scraper sources
-
-Add Funcheap SF as a search source in `weekly-event-scraper` so recurring volunteer events like the morning cleanup are picked up automatically.
-
-### Technical details
-
-- Migration SQL to delete the duplicate PloverFest by ID
-- POST to `/add-events` for the 7 new events
-- Update `SEARCH_SOURCES` array in `weekly-event-scraper/index.ts`
+### Implementation
+- Call the `add-menus` edge function with all 6 entries (restaurant: "Arizmendi Bakery", location: "1331 9th Ave", category: "pizza", hours: standard Arizmendi hours).
+- This populates Tue-Sun so the InfoStrip widget and weekly newsletter (sending tomorrow morning) have correct data.
 
