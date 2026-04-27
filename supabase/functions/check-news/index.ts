@@ -187,6 +187,13 @@ For each article, provide:
 - is_actionable: true if a resident can DO something
 - summary: 1–2 sentences for a neighbor. Plain language. What it means here, what they can do.
 
+SUMMARY ACCURACY (CRITICAL):
+- Base the summary ONLY on what is explicitly stated in the article body provided. Do NOT invent details, calls-to-action, or quotes.
+- Get geography right: District 4 = Outer Sunset/Parkside (NOT the Richmond). District 1 = Richmond. District 2 = Marina/Cow Hollow/Pacific Heights. Don't confuse them.
+- For opinion/column pieces, accurately reflect the author's actual argument, not a generic "both sides" framing.
+- If you can't generate an accurate summary from the body, lower the relevance_score and omit the article.
+- Do not append generic civic boilerplate like "residents can vote" or "neighbors should attend" unless the article specifically tells them to.
+
 Return 1–4 articles. Only include stories scoring 0.6 or above. If only 1 story clears that bar, return just 1. Skip national news, sports, celebrity, arts/culture reviews with no neighborhood angle, and stories with no SF neighborhood relevance.`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
