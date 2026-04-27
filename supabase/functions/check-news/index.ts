@@ -51,7 +51,8 @@ function parseRSSFeed(xml: string, sourceName: string): ParsedArticle[] {
       articles.push({
         title: title.replace(/<[^>]*>/g, "").trim(),
         link: link.trim(),
-        description: description.replace(/<[^>]*>/g, "").substring(0, 500).trim(),
+        // Keep more of the RSS description; we also fetch full article body below
+        description: description.replace(/<[^>]*>/g, "").substring(0, 2000).trim(),
         pubDate,
         sourceName,
       });
@@ -99,15 +100,51 @@ async function fetchRSSArticles(hoursBack: number = 48): Promise<ParsedArticle[]
   return allArticles;
 }
 
+// Fetch the full article HTML and extract a plain-text body so the LLM
+// has the real content (not just a 1-paragraph RSS lede). This prevents
+// hallucinated summaries on long opinion columns.
+async function fetchArticleBody(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "OuterSunsetToday/1.0 (community news aggregator)" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return "";
+    const html = await res.text();
+    // Strip scripts/styles, then tags, then collapse whitespace
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&#8217;|&rsquo;/gi, "'")
+      .replace(/&#8220;|&#8221;|&ldquo;|&rdquo;/gi, '"')
+      .replace(/\s+/g, " ")
+      .trim();
+    // Cap at 6000 chars per article — plenty for a summary, keeps token cost sane
+    return text.substring(0, 6000);
+  } catch (err) {
+    console.warn(`Failed to fetch article body for ${url}:`, err instanceof Error ? err.message : String(err));
+    return "";
+  }
+}
+
 async function analyzeWithClaude(articles: ParsedArticle[]): Promise<any[]> {
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
   if (articles.length === 0) return [];
 
+  // Fetch full bodies in parallel so Claude sees actual article content
+  const bodies = await Promise.all(articles.map((a) => fetchArticleBody(a.link)));
+
   const articlesText = articles
-    .map((a, i) => `[${i}] "${a.title}" (${a.sourceName})\n${a.description}`)
-    .join("\n\n");
+    .map((a, i) => {
+      const body = bodies[i] || a.description;
+      return `[${i}] "${a.title}" (${a.sourceName})\nURL: ${a.link}\n${body}`;
+    })
+    .join("\n\n---\n\n");
 
   const systemPrompt = `You are a neighborhood news curator for the Outer Sunset and Richmond districts of San Francisco. Your audience lives in the foggy, beachy neighborhoods stretching from roughly 19th Avenue to Ocean Beach.
 
@@ -149,6 +186,13 @@ For each article, provide:
 - category: housing | transit | business | community | government | education | environment | safety | health | culture
 - is_actionable: true if a resident can DO something
 - summary: 1–2 sentences for a neighbor. Plain language. What it means here, what they can do.
+
+SUMMARY ACCURACY (CRITICAL):
+- Base the summary ONLY on what is explicitly stated in the article body provided. Do NOT invent details, calls-to-action, or quotes.
+- Get geography right: District 4 = Outer Sunset/Parkside (NOT the Richmond). District 1 = Richmond. District 2 = Marina/Cow Hollow/Pacific Heights. Don't confuse them.
+- For opinion/column pieces, accurately reflect the author's actual argument, not a generic "both sides" framing.
+- If you can't generate an accurate summary from the body, lower the relevance_score and omit the article.
+- Do not append generic civic boilerplate like "residents can vote" or "neighbors should attend" unless the article specifically tells them to.
 
 Return 1–4 articles. Only include stories scoring 0.6 or above. If only 1 story clears that bar, return just 1. Skip national news, sports, celebrity, arts/culture reviews with no neighborhood angle, and stories with no SF neighborhood relevance.`;
 
