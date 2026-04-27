@@ -51,7 +51,8 @@ function parseRSSFeed(xml: string, sourceName: string): ParsedArticle[] {
       articles.push({
         title: title.replace(/<[^>]*>/g, "").trim(),
         link: link.trim(),
-        description: description.replace(/<[^>]*>/g, "").substring(0, 500).trim(),
+        // Keep more of the RSS description; we also fetch full article body below
+        description: description.replace(/<[^>]*>/g, "").substring(0, 2000).trim(),
         pubDate,
         sourceName,
       });
