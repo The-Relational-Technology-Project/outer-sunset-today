@@ -100,15 +100,51 @@ async function fetchRSSArticles(hoursBack: number = 48): Promise<ParsedArticle[]
   return allArticles;
 }
 
+// Fetch the full article HTML and extract a plain-text body so the LLM
+// has the real content (not just a 1-paragraph RSS lede). This prevents
+// hallucinated summaries on long opinion columns.
+async function fetchArticleBody(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "OuterSunsetToday/1.0 (community news aggregator)" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return "";
+    const html = await res.text();
+    // Strip scripts/styles, then tags, then collapse whitespace
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&#8217;|&rsquo;/gi, "'")
+      .replace(/&#8220;|&#8221;|&ldquo;|&rdquo;/gi, '"')
+      .replace(/\s+/g, " ")
+      .trim();
+    // Cap at 6000 chars per article — plenty for a summary, keeps token cost sane
+    return text.substring(0, 6000);
+  } catch (err) {
+    console.warn(`Failed to fetch article body for ${url}:`, err instanceof Error ? err.message : String(err));
+    return "";
+  }
+}
+
 async function analyzeWithClaude(articles: ParsedArticle[]): Promise<any[]> {
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
   if (articles.length === 0) return [];
 
+  // Fetch full bodies in parallel so Claude sees actual article content
+  const bodies = await Promise.all(articles.map((a) => fetchArticleBody(a.link)));
+
   const articlesText = articles
-    .map((a, i) => `[${i}] "${a.title}" (${a.sourceName})\n${a.description}`)
-    .join("\n\n");
+    .map((a, i) => {
+      const body = bodies[i] || a.description;
+      return `[${i}] "${a.title}" (${a.sourceName})\nURL: ${a.link}\n${body}`;
+    })
+    .join("\n\n---\n\n");
 
   const systemPrompt = `You are a neighborhood news curator for the Outer Sunset and Richmond districts of San Francisco. Your audience lives in the foggy, beachy neighborhoods stretching from roughly 19th Avenue to Ocean Beach.
 
