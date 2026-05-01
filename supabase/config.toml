@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.send-custom-alert]
 verify_jwt = false
+
+[functions.check-weather-alert]
+verify_jwt = false
