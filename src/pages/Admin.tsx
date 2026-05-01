@@ -40,6 +40,10 @@ export default function Admin() {
   const [scannedEventData, setScannedEventData] = useState<any>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isScanning, setIsScanning] = useState<string | null>(null);
+  const [customUpdates, setCustomUpdates] = useState<Array<{ id: string; description: string; subscriber_count: number }>>([]);
+  const [selectedUpdateId, setSelectedUpdateId] = useState<string>("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [isSendingAlert, setIsSendingAlert] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
