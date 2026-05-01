@@ -1,21 +1,45 @@
 
+# Custom Alert Sending with Personal SMS Outreach
 
-## Add Arizmendi Pizza Menus for April 21–26
+## How it works
 
-The database has no pizza menus beyond today (Sun Apr 19). Arizmendi is closed Mon Apr 20, then reopens Tue Apr 21. From the screenshot, here are the specials to add:
+When you trigger an alert for a custom update (from the admin dashboard):
 
-| Date | Day | Special |
-|---|---|---|
-| Apr 21 | Tue | asparagus, feta cheese, red onions, lemon vinaigrette |
-| Apr 22 | Wed | cherry tomatoes, roasted garlic, fontina, rosemary oil, p&p |
-| Apr 23 | Thu | mushrooms, fresh herbs, goat cheese, garlic oil, p&p |
-| Apr 24 | Fri | 'Quattro Fromaggio' housemade sauce w/asiago, feta, parmesan & romano, thyme oil, parsley |
-| Apr 25 | Sat | cherry tomatoes, spinach, manchego, garlic oil, parmesan |
-| Apr 26 | Sun | shiitake, portabella and button mushrooms with sesame-ginger-garlic vinaigrette |
+- **Email subscribers** receive the alert message directly via Resend -- no intermediary.
+- **SMS subscribers** do NOT get an auto-text. Instead, **you** get an email at joshuanesbit@gmail.com containing:
+  - The alert description and message
+  - Each phone subscriber's number
+  - A clickable `sms:` link that opens your messaging app with the number and message pre-populated
+  - The raw message for easy copy-paste
 
-Mon Apr 20 — skip (closed).
+This preserves the personal, neighborly touch for texts while keeping email alerts instant.
 
-### Implementation
-- Call the `add-menus` edge function with all 6 entries (restaurant: "Arizmendi Bakery", location: "1331 9th Ave", category: "pizza", hours: standard Arizmendi hours).
-- This populates Tue-Sun so the InfoStrip widget and weekly newsletter (sending tomorrow morning) have correct data.
+## Implementation
 
+### 1. New Edge Function: `send-custom-alert`
+
+- Accepts: `update_id` (which custom update to alert) and `message` (the alert text)
+- Protected by ADMIN_PASSWORD (same pattern as other admin functions)
+- Uses service role to query `custom_update_subscriptions` for all subscribers of that update
+- **Email subscribers**: sends them the alert directly via Resend (with 600ms delay between sends per rate-limit rules)
+- **SMS subscribers**: collects their numbers, builds an HTML email with `sms:{number}?body={url-encoded message}` links, and sends that digest email to joshuanesbit@gmail.com
+- **Both subscribers**: get the email directly + their phone number goes in the digest email to you
+- Add `verify_jwt = false` in config.toml
+
+### 2. Admin Dashboard Addition
+
+Add a "Send Alert" section to the existing `/admin` page:
+- Dropdown to select a custom update (fetched from `custom_updates` table)
+- Text area for the alert message
+- "Send Alert" button that calls the edge function
+- Success/error feedback
+
+### 3. Future automation hook
+
+The edge function is designed so that a future cron job or trigger can call it with the same `update_id` + `message` parameters. When you're ready to automate specific alerts, we just need to build the condition-checking logic that invokes this same function -- no changes to the sending flow.
+
+## What stays the same
+
+- The `/updates` page and subscription flow are untouched
+- No Twilio dependency needed
+- Existing notification emails (new signup alerts to josh@relationaltechproject.org) continue as before
