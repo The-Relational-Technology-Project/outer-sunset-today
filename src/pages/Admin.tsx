@@ -52,6 +52,7 @@ export default function Admin() {
     if (adminAuth === "true") {
       setIsAuthenticated(true);
       loadPendingEvents();
+      loadCustomUpdates();
     }
   }, []);
 
