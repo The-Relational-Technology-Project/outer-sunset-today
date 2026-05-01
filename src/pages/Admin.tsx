@@ -602,6 +602,61 @@ export default function Admin() {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="alerts" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-bulletin">Send Custom Alert</CardTitle>
+                <CardDescription>
+                  Email subscribers get the message directly. SMS subscribers trigger a personal outreach email to you with click-to-text links.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="alert-update" className="text-sm font-bold">Select update</Label>
+                  {customUpdates.length === 0 ? (
+                    <p className="text-sm text-muted-foreground mt-2">No custom updates found.</p>
+                  ) : (
+                    <Select value={selectedUpdateId} onValueChange={setSelectedUpdateId}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Choose a custom update..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customUpdates.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.description} ({u.subscriber_count} subscriber{u.subscriber_count !== 1 ? "s" : ""})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="alert-message" className="text-sm font-bold">Alert message</Label>
+                  <Textarea
+                    id="alert-message"
+                    value={alertMessage}
+                    onChange={(e) => setAlertMessage(e.target.value)}
+                    placeholder="Type the alert message here. Email subscribers will see this as the email body. SMS subscribers will receive this as a pre-populated text from you."
+                    className="mt-1 min-h-[120px]"
+                    maxLength={1600}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{alertMessage.length}/1600 characters</p>
+                </div>
+
+                <Button
+                  onClick={handleSendAlert}
+                  disabled={isSendingAlert || !selectedUpdateId || !alertMessage.trim()}
+                  className="w-full bg-sunset-orange hover:bg-sunset-orange/90 text-white"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {isSendingAlert ? "Sending..." : "Send Alert"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
         </Tabs>
       </main>
       
