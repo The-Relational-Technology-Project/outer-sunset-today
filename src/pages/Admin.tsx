@@ -392,7 +392,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="events" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events">Pending Events</TabsTrigger>
             <TabsTrigger value="flyers">
               <ImageIcon className="w-4 h-4 mr-2" />
@@ -401,6 +401,10 @@ export default function Admin() {
             <TabsTrigger value="contacts">
               <Mail className="w-4 h-4 mr-2" />
               Messages ({contactSubmissions.length})
+            </TabsTrigger>
+            <TabsTrigger value="alerts">
+              <Bell className="w-4 h-4 mr-2" />
+              Send Alert
             </TabsTrigger>
           </TabsList>
 
