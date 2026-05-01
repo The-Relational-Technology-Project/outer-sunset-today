@@ -135,6 +135,44 @@ export default function Admin() {
     }
   };
 
+  const loadCustomUpdates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("custom_updates")
+        .select("id, description, subscriber_count")
+        .order("created_at", { ascending: false });
+      if (!error && data) setCustomUpdates(data);
+    } catch (err) {
+      console.error("Failed to load custom updates:", err);
+    }
+  };
+
+  const handleSendAlert = async () => {
+    if (!selectedUpdateId || !alertMessage.trim()) return;
+    setIsSendingAlert(true);
+    try {
+      const storedPassword = sessionStorage.getItem("admin_password") || password;
+      const { data, error } = await supabase.functions.invoke("send-custom-alert", {
+        body: { password: storedPassword, update_id: selectedUpdateId, message: alertMessage.trim() },
+      });
+      if (error) throw error;
+      toast({
+        title: "Alert sent!",
+        description: data.summary || "Alert processed successfully.",
+      });
+      setAlertMessage("");
+      setSelectedUpdateId("");
+    } catch (err: any) {
+      toast({
+        title: "Failed to send alert",
+        description: err.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingAlert(false);
+    }
+  };
+
   const handleAction = async (eventId: string, action: 'approve' | 'reject') => {
     setIsLoading(true);
     try {
