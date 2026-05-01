@@ -97,7 +97,8 @@ export default function Admin() {
       setPendingEvents(data.events || []);
       setFlyerSubmissions(data.flyers || []);
       setContactSubmissions(data.contacts || []);
-      
+      loadCustomUpdates();
+
       toast({
         title: "Login successful",
         description: "Welcome to the admin panel",
