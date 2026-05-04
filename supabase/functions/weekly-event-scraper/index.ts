@@ -386,11 +386,12 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
 async function scrapeBatch(
   sources: { name: string; url: string; type?: string }[],
   apiKey: string,
-  waitFor = 3000
+  waitFor = 3000,
+  formats: string[] = ['markdown']
 ): Promise<{ name: string; content: string | null }[]> {
   const results = await Promise.all(
     sources.map(async (source) => {
-      const content = await scrapeUrl(source.url, apiKey, waitFor);
+      const content = await scrapeUrl(source.url, apiKey, waitFor, formats);
       return { name: source.name, content };
     })
   );
