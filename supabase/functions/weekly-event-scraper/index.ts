@@ -237,14 +237,14 @@ For EACH pizza day within ${weekStart} to ${weekEnd}, create an entry:
 {
   "restaurant": "Arizmendi Bakery",
   "location": "1331 9th Ave, San Francisco",
-  "menu_date": "2026-01-XX",
+  "menu_date": "YYYY-MM-DD",
   "special_item": "the pizza toppings exactly as written",
   "category": "pizza",
   "hours": "11am until sold out"
 }
 
 Return ONLY a JSON array. No explanations.
-Example: [{"restaurant": "Arizmendi Bakery", "location": "1331 9th Ave, San Francisco", "menu_date": "2026-01-27", "special_item": "roasted yellow potatoes with basil pesto", "category": "pizza", "hours": "11am until sold out"}, ...]
+Example: [{"restaurant": "Arizmendi Bakery", "location": "1331 9th Ave, San Francisco", "menu_date": "${weekStart}", "special_item": "roasted yellow potatoes with basil pesto", "category": "pizza", "hours": "11am until sold out"}, ...]
 
 CALENDAR CONTENT:
 ${pizzaContent}`;
