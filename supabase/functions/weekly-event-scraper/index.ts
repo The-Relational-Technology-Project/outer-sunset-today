@@ -438,7 +438,7 @@ serve(async (req) => {
     
     const [primaryEventResults, pizzaResults, searchResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
-      scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 4000),
+      scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html']),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
     ]);
 
