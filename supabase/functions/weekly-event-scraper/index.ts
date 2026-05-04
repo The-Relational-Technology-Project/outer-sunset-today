@@ -216,6 +216,12 @@ async function extractPizzaMenusWithAI(pizzaContent: string, weekStart: string, 
     const startDate = new Date(weekStart);
     const endDate = new Date(weekEnd);
     
+    // Dynamically determine month/year from the week start date
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const wsDate = new Date(weekStart + 'T00:00:00');
+    const monthName = monthNames[wsDate.getMonth()];
+    const year = wsDate.getFullYear();
+    
     const prompt = `Extract Arizmendi Bakery pizza menu for the week of ${weekStart} to ${weekEnd}.
 
 The content below shows a calendar table. Each cell contains a date number followed by pizza toppings.
@@ -224,21 +230,21 @@ Format: "DAY_NUMBER<br>pizza toppings" (e.g., "27<br>roasted yellow potatoes wit
 RULES:
 1. Arizmendi is CLOSED on Mondays only - skip Monday
 2. Extract pizzas for Tuesday through Sunday
-3. All dates are in January 2026
+3. Dates are in ${monthName} ${year} (or the month shown in the calendar header)
 4. You should find approximately 6 pizzas (Tue-Sun) within the date range
 
 For EACH pizza day within ${weekStart} to ${weekEnd}, create an entry:
 {
   "restaurant": "Arizmendi Bakery",
   "location": "1331 9th Ave, San Francisco",
-  "menu_date": "2026-01-XX",
+  "menu_date": "YYYY-MM-DD",
   "special_item": "the pizza toppings exactly as written",
   "category": "pizza",
   "hours": "11am until sold out"
 }
 
 Return ONLY a JSON array. No explanations.
-Example: [{"restaurant": "Arizmendi Bakery", "location": "1331 9th Ave, San Francisco", "menu_date": "2026-01-27", "special_item": "roasted yellow potatoes with basil pesto", "category": "pizza", "hours": "11am until sold out"}, ...]
+Example: [{"restaurant": "Arizmendi Bakery", "location": "1331 9th Ave, San Francisco", "menu_date": "${weekStart}", "special_item": "roasted yellow potatoes with basil pesto", "category": "pizza", "hours": "11am until sold out"}, ...]
 
 CALENDAR CONTENT:
 ${pizzaContent}`;
