@@ -61,9 +61,9 @@ function getDateRange(): { weekStart: string; weekEnd: string; weekStartDate: Da
 }
 
 // Scrape a single URL using Firecrawl
-async function scrapeUrl(url: string, apiKey: string, waitFor = 3000): Promise<string | null> {
+async function scrapeUrl(url: string, apiKey: string, waitFor = 3000, formats: string[] = ['markdown']): Promise<string | null> {
   try {
-    console.log(`Scraping: ${url}`);
+    console.log(`Scraping: ${url} (waitFor: ${waitFor}ms, formats: ${formats.join(',')})`);
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -72,7 +72,7 @@ async function scrapeUrl(url: string, apiKey: string, waitFor = 3000): Promise<s
       },
       body: JSON.stringify({
         url,
-        formats: ['markdown'],
+        formats,
         onlyMainContent: true,
         waitFor,
       }),
@@ -84,7 +84,10 @@ async function scrapeUrl(url: string, apiKey: string, waitFor = 3000): Promise<s
     }
 
     const data = await response.json();
-    return data.data?.markdown || data.markdown || null;
+    // Prefer HTML for pages with JS-rendered content (like Arizmendi calendar)
+    const html = data.data?.html || data.html;
+    const markdown = data.data?.markdown || data.markdown;
+    return html || markdown || null;
   } catch (error) {
     console.error(`Error scraping ${url}:`, error);
     return null;
