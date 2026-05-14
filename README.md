@@ -1,78 +1,27 @@
-# Welcome to your Lovable project
+# Outer Sunset Today
 
-## Project info
+A daily neighborhood page for the Outer Sunset district of San Francisco — today's events, local news, and a community calendar, all in one place.
 
-**URL**: https://lovable.dev/projects/060e4996-799d-4a8b-9e1f-f867d7701afb
+## What is this?
 
-## How can I edit this code?
+Outer Sunset Today is a live neighborhood bulletin board. It shows what's happening today, upcoming events, and local news for the Outer Sunset. Residents can submit their own events, sign up for a newsletter, and use the "Plan My Day" feature to build a schedule from what's happening nearby.
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- **Today's events** — What's happening in the neighborhood right now
+- **Community calendar** — Browse and search upcoming events
+- **Local news** — Curated neighborhood news and updates
+- **Event submission** — Neighbors can submit their own events
+- **Newsletter signup** — Get a regular digest of what's happening
+- **Plan My Day** — Build a personal schedule from today's events
+- **Admin tools** — Dashboard for stewards to manage content
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/060e4996-799d-4a8b-9e1f-f867d7701afb) and start prompting.
+## Tech stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
+- [Supabase](https://supabase.com/) for database and auth
 
-**Use your preferred IDE**
+## Part of the Relational Technology Project
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/060e4996-799d-4a8b-9e1f-f867d7701afb) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
-
-## Builder
-
-Josh Nesbit – co-founder of Relational Tech Project, building with neighbors in the Outer Sunset in SF.
-Reach me by email: josh@relationaltechproject.org
+Built as part of the [Relational Technology Project](https://relationaltechproject.org) — open-source neighborhood tech made in the Outer Sunset, for neighborhoods everywhere.
