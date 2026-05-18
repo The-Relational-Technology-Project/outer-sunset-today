@@ -518,15 +518,30 @@ serve(async (req) => {
       extractEventsWithAI(combinedEventContent, weekStart, weekEnd),
       pizzaContent ? extractPizzaMenusWithAI(pizzaContent, weekStart, weekEnd) : Promise.resolve([]),
     ]);
-    
+
+    // Diagnose pizza failures with a clear signal
+    let pizzaStatus = `OK — ${menus.length} menus extracted`;
+    if (!pizzaContent) {
+      pizzaStatus = `PIZZA_SCRAPE_FAILED — Firecrawl returned no content for arizmendibakery.com/pizza`;
+      console.error(pizzaStatus);
+    } else if (menus.length === 0) {
+      const hasCalendar = pizzaContent.includes('yasp-item') || pizzaContent.includes('yasp-num');
+      if (hasCalendar) {
+        pizzaStatus = `PIZZA_AI_EXTRACTION_FAILED — page scraped (${pizzaContent.length} chars, calendar markup present) but AI returned 0 menus`;
+      } else {
+        pizzaStatus = `PIZZA_SCRAPE_INCOMPLETE — page scraped (${pizzaContent.length} chars) but calendar markup missing; snippet: ${pizzaContent.slice(0, 300)}`;
+      }
+      console.error(pizzaStatus);
+    }
+
     console.log(`Total extracted: ${events.length} events, ${menus.length} pizza menus`);
 
     // Import to database
     console.log('--- Importing to Database ---');
     const importResults = await importToDatabase(events, menus);
 
-    // Send notification email
-    await sendNotificationEmail(importResults, weekStart, weekEnd);
+    // Send notification email (include pizza diagnostic)
+    await sendNotificationEmail(importResults, weekStart, weekEnd, pizzaStatus);
 
     const response = {
       success: true,
