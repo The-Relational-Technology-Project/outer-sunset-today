@@ -356,7 +356,8 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
         <li>Pizza menus inserted: <strong>${menusInserted}</strong></li>
         <li>Pizza menus updated: ${menusUpdated}</li>
       </ul>
-      
+
+      ${pizzaStatus ? `<p><strong>Pizza scrape status:</strong> ${pizzaStatus}</p>` : ''}
       ${errors.length > 0 ? `
         <h3>⚠️ Errors</h3>
         <ul>
