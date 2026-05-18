@@ -332,7 +332,7 @@ async function importToDatabase(events: any[], menus: any[]): Promise<any> {
 }
 
 // Send notification email
-async function sendNotificationEmail(results: any, weekStart: string, weekEnd: string): Promise<void> {
+async function sendNotificationEmail(results: any, weekStart: string, weekEnd: string, pizzaStatus?: string): Promise<void> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     
