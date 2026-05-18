@@ -332,7 +332,7 @@ async function importToDatabase(events: any[], menus: any[]): Promise<any> {
 }
 
 // Send notification email
-async function sendNotificationEmail(results: any, weekStart: string, weekEnd: string): Promise<void> {
+async function sendNotificationEmail(results: any, weekStart: string, weekEnd: string, pizzaStatus?: string): Promise<void> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     
@@ -356,7 +356,8 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
         <li>Pizza menus inserted: <strong>${menusInserted}</strong></li>
         <li>Pizza menus updated: ${menusUpdated}</li>
       </ul>
-      
+
+      ${pizzaStatus ? `<p><strong>Pizza scrape status:</strong> ${pizzaStatus}</p>` : ''}
       ${errors.length > 0 ? `
         <h3>⚠️ Errors</h3>
         <ul>
@@ -436,9 +437,22 @@ serve(async (req) => {
     // Run PRIMARY sources in parallel first (critical sources)
     console.log('--- Scraping Primary Sources ---');
     
+    // Pizza scrape with retry — single critical URL, cheap to retry
+    const scrapePizzaWithRetry = async () => {
+      let results = await scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html', 'markdown']);
+      const first = results[0];
+      const tooShort = !first?.content || first.content.length < 500;
+      if (tooShort) {
+        console.warn(`PIZZA_SCRAPE_RETRY: first attempt returned ${first?.content?.length ?? 0} chars, retrying in 3s...`);
+        await new Promise((r) => setTimeout(r, 3000));
+        results = await scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html', 'markdown']);
+      }
+      return results;
+    };
+
     const [primaryEventResults, pizzaResults, searchResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
-      scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html']),
+      scrapePizzaWithRetry(),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
     ]);
 
@@ -505,15 +519,30 @@ serve(async (req) => {
       extractEventsWithAI(combinedEventContent, weekStart, weekEnd),
       pizzaContent ? extractPizzaMenusWithAI(pizzaContent, weekStart, weekEnd) : Promise.resolve([]),
     ]);
-    
+
+    // Diagnose pizza failures with a clear signal
+    let pizzaStatus = `OK — ${menus.length} menus extracted`;
+    if (!pizzaContent) {
+      pizzaStatus = `PIZZA_SCRAPE_FAILED — Firecrawl returned no content for arizmendibakery.com/pizza`;
+      console.error(pizzaStatus);
+    } else if (menus.length === 0) {
+      const hasCalendar = pizzaContent.includes('yasp-item') || pizzaContent.includes('yasp-num');
+      if (hasCalendar) {
+        pizzaStatus = `PIZZA_AI_EXTRACTION_FAILED — page scraped (${pizzaContent.length} chars, calendar markup present) but AI returned 0 menus`;
+      } else {
+        pizzaStatus = `PIZZA_SCRAPE_INCOMPLETE — page scraped (${pizzaContent.length} chars) but calendar markup missing; snippet: ${pizzaContent.slice(0, 300)}`;
+      }
+      console.error(pizzaStatus);
+    }
+
     console.log(`Total extracted: ${events.length} events, ${menus.length} pizza menus`);
 
     // Import to database
     console.log('--- Importing to Database ---');
     const importResults = await importToDatabase(events, menus);
 
-    // Send notification email
-    await sendNotificationEmail(importResults, weekStart, weekEnd);
+    // Send notification email (include pizza diagnostic)
+    await sendNotificationEmail(importResults, weekStart, weekEnd, pizzaStatus);
 
     const response = {
       success: true,
