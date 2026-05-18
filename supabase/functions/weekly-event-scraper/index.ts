@@ -436,9 +436,22 @@ serve(async (req) => {
     // Run PRIMARY sources in parallel first (critical sources)
     console.log('--- Scraping Primary Sources ---');
     
+    // Pizza scrape with retry — single critical URL, cheap to retry
+    const scrapePizzaWithRetry = async () => {
+      let results = await scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html', 'markdown']);
+      const first = results[0];
+      const tooShort = !first?.content || first.content.length < 500;
+      if (tooShort) {
+        console.warn(`PIZZA_SCRAPE_RETRY: first attempt returned ${first?.content?.length ?? 0} chars, retrying in 3s...`);
+        await new Promise((r) => setTimeout(r, 3000));
+        results = await scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html', 'markdown']);
+      }
+      return results;
+    };
+
     const [primaryEventResults, pizzaResults, searchResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
-      scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html']),
+      scrapePizzaWithRetry(),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
     ]);
 
