@@ -14,11 +14,25 @@ const PRIMARY_EVENT_PAGES = [
   { name: "Civic Joy Fund Cleanups", url: "https://www.mobilize.us/civicjoyfund/" },
   { name: "Blackbird Cafe", url: "https://blackbirdsf.com/pages/events" },
   { name: "Sealevel Studio", url: "https://sealevelsf.com/pages/events" },
-  { name: "Sunset Dunes Park", url: "https://sunsetdunes.org/events" },
   { name: "Outer Village", url: "https://www.outervillagesf.com/classes-events" },
   { name: "Ortega Library", url: "https://sfpl.org/events/#!/filters?field_event_location_target_id=46" },
   { name: "Richmond Library", url: "https://sfpl.org/locations/richmond" },
   { name: "Inner Sunset Park Neighbors", url: "https://www.inner-sunset.org/events-2/" },
+];
+
+// iCal sources - parsed directly, no AI, no truncation. For Squarespace, the
+// page-level `?format=ical` returns HTML, but each individual event exposes a
+// real .ics at `/events/<slug>?format=ical`. We discover those links from the
+// events listing page, then fetch each ical in parallel.
+const ICAL_SOURCES = [
+  {
+    name: "Sunset Dunes Park",
+    type: "squarespace-discovery" as const,
+    listUrl: "https://sunsetdunes.org/events/",
+    origin: "https://sunsetdunes.org",
+    defaultLocation: "Sunset Dunes",
+    defaultEventType: "outdoor",
+  },
 ];
 
 // SECONDARY: Additional sources, run after primary completes
@@ -421,6 +435,198 @@ async function searchBatch(
   return results;
 }
 
+// --- iCal (RFC 5545) support ---------------------------------------------------
+
+// Unfold RFC 5545 line continuations: lines beginning with a space or tab
+// continue the previous line.
+function unfoldIcal(raw: string): string[] {
+  const lines = raw.replace(/\r\n/g, '\n').split('\n');
+  const out: string[] = [];
+  for (const line of lines) {
+    if ((line.startsWith(' ') || line.startsWith('\t')) && out.length > 0) {
+      out[out.length - 1] += line.slice(1);
+    } else {
+      out.push(line);
+    }
+  }
+  return out;
+}
+
+// Unescape RFC 5545 text values (\n, \, ,, ;)
+function unescapeIcalText(v: string): string {
+  return v
+    .replace(/\\n/gi, '\n')
+    .replace(/\\,/g, ',')
+    .replace(/\\;/g, ';')
+    .replace(/\\\\/g, '\\')
+    .trim();
+}
+
+// Parse a DTSTART/DTEND value. Returns { date: 'YYYY-MM-DD', time: 'HH:MM' | null }
+// in America/Los_Angeles. Handles:
+//   DTSTART;VALUE=DATE:20260524
+//   DTSTART;TZID=America/Los_Angeles:20260524T090000
+//   DTSTART:20260524T160000Z   (UTC -> convert to LA)
+function parseIcalDateTime(rawKey: string, value: string): { date: string; time: string | null } | null {
+  const params = rawKey.split(';').slice(1).reduce<Record<string, string>>((acc, p) => {
+    const [k, v] = p.split('=');
+    if (k && v) acc[k.toUpperCase()] = v;
+    return acc;
+  }, {});
+
+  // Date-only
+  if (params.VALUE === 'DATE' || /^\d{8}$/.test(value)) {
+    const m = value.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (!m) return null;
+    return { date: `${m[1]}-${m[2]}-${m[3]}`, time: null };
+  }
+
+  const m = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$/);
+  if (!m) return null;
+  const [, y, mo, d, hh, mm, _ss, z] = m;
+
+  // If UTC, convert to America/Los_Angeles via Intl
+  if (z === 'Z') {
+    const utc = new Date(`${y}-${mo}-${d}T${hh}:${mm}:00Z`);
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Los_Angeles',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(utc).map(p => [p.type, p.value]));
+    return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
+  }
+
+  // Floating or TZID=America/Los_Angeles → treat as Pacific local (matches our standard)
+  return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
+}
+
+// Parse an iCal feed into structured events for our import format.
+function parseIcalFeed(
+  ics: string,
+  source: { name: string; defaultLocation?: string; defaultEventType?: string }
+): any[] {
+  const lines = unfoldIcal(ics);
+  const events: any[] = [];
+  let cur: Record<string, string> | null = null;
+  let curKeys: Record<string, string> | null = null;
+
+  for (const line of lines) {
+    if (line === 'BEGIN:VEVENT') { cur = {}; curKeys = {}; continue; }
+    if (line === 'END:VEVENT') {
+      if (cur && curKeys) {
+        const start = cur.DTSTART ? parseIcalDateTime(curKeys.DTSTART, cur.DTSTART) : null;
+        const end = cur.DTEND ? parseIcalDateTime(curKeys.DTEND, cur.DTEND) : null;
+        if (start && cur.SUMMARY) {
+          events.push({
+            title: unescapeIcalText(cur.SUMMARY),
+            location: cur.LOCATION ? unescapeIcalText(cur.LOCATION) : (source.defaultLocation || ''),
+            event_date: start.date,
+            start_time: start.time || '09:00',
+            end_time: end?.time || undefined,
+            description: cur.DESCRIPTION ? unescapeIcalText(cur.DESCRIPTION).slice(0, 500) : undefined,
+            event_type: source.defaultEventType || 'community',
+          });
+        }
+      }
+      cur = null; curKeys = null;
+      continue;
+    }
+    if (!cur || !curKeys) continue;
+
+    const idx = line.indexOf(':');
+    if (idx === -1) continue;
+    const rawKey = line.slice(0, idx);
+    const value = line.slice(idx + 1);
+    const baseKey = rawKey.split(';')[0].toUpperCase();
+    cur[baseKey] = value;
+    curKeys[baseKey] = rawKey;
+  }
+
+  return events;
+}
+
+async function fetchIcalSource(
+  source: {
+    name: string;
+    type: "squarespace-discovery";
+    listUrl: string;
+    origin: string;
+    defaultLocation?: string;
+    defaultEventType?: string;
+  },
+  weekStart: string,
+  weekEnd: string
+): Promise<{ name: string; events: any[]; success: boolean }> {
+  try {
+    console.log(`Discovering iCal links: ${source.listUrl}`);
+    const listRes = await fetch(source.listUrl, {
+      headers: { 'User-Agent': 'OuterSunsetToday/1.0 (outersunset.today)' },
+    });
+    if (!listRes.ok) {
+      console.error(`iCal listing fetch failed ${source.name}: ${listRes.status}`);
+      return { name: source.name, events: [], success: false };
+    }
+    const html = await listRes.text();
+
+    // Extract unique per-event iCal paths from the listing page.
+    const paths = Array.from(html.matchAll(/href="(\/events\/[^"?#]+\?format=ical)"/g))
+      .map(m => m[1]);
+    const uniquePaths = Array.from(new Set(paths)).slice(0, 80); // safety cap
+    console.log(`iCal ${source.name}: discovered ${uniquePaths.length} event links`);
+
+    if (uniquePaths.length === 0) {
+      return { name: source.name, events: [], success: false };
+    }
+
+    // Fetch each event's ical in parallel.
+    const fetched = await Promise.all(uniquePaths.map(async (p) => {
+      try {
+        const r = await fetch(source.origin + p, {
+          headers: { 'User-Agent': 'OuterSunsetToday/1.0 (outersunset.today)' },
+        });
+        if (!r.ok) return '';
+        return await r.text();
+      } catch { return ''; }
+    }));
+
+    const all: any[] = [];
+    for (const ics of fetched) {
+      if (ics && ics.includes('BEGIN:VEVENT')) {
+        all.push(...parseIcalFeed(ics, source));
+      }
+    }
+
+    const inRange = all.filter(e => e.event_date >= weekStart && e.event_date < weekEnd);
+    console.log(`iCal ${source.name}: parsed ${all.length}, in-range ${inRange.length}`);
+    return { name: source.name, events: inRange, success: true };
+  } catch (err) {
+    console.error(`iCal error ${source.name}:`, err);
+    return { name: source.name, events: [], success: false };
+  }
+}
+
+// --- Run-wide dedupe ----------------------------------------------------------
+// Matches our import dedupe key (title + date + location), case/whitespace
+// insensitive, plus location normalization mirrored from bulk-import-events.
+function normalizeLocationForKey(loc: string): string {
+  const l = (loc || '').toLowerCase();
+  if (l.includes('sealevel')) return 'sealevel';
+  return l.trim().replace(/\s+/g, ' ');
+}
+function dedupeEvents(events: any[]): { unique: any[]; dropped: number } {
+  const seen = new Set<string>();
+  const unique: any[] = [];
+  let dropped = 0;
+  for (const e of events) {
+    const key = `${(e.title || '').toLowerCase().trim()}|${e.event_date}|${normalizeLocationForKey(e.location || '')}`;
+    if (seen.has(key)) { dropped++; continue; }
+    seen.add(key);
+    unique.push(e);
+  }
+  return { unique, dropped };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -458,11 +664,20 @@ serve(async (req) => {
       return results;
     };
 
-    const [primaryEventResults, pizzaResults, searchResults] = await Promise.all([
+    const [primaryEventResults, pizzaResults, searchResults, icalResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
       scrapePizzaWithRetry(),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
+      Promise.all(ICAL_SOURCES.map(s => fetchIcalSource(s, weekStart, weekEnd))),
     ]);
+
+    // Collect iCal events directly (no AI). Track source success.
+    const icalEvents: any[] = [];
+    for (const r of icalResults) {
+      sourceResults.push({ name: `${r.name} (iCal)`, success: r.success });
+      icalEvents.push(...r.events);
+    }
+    console.log(`iCal sources contributed ${icalEvents.length} events`);
 
     // Process primary event results
     for (const { name, content } of primaryEventResults) {
@@ -523,10 +738,19 @@ serve(async (req) => {
     }
     
     // Run event and pizza extraction in parallel
-    const [events, menus] = await Promise.all([
+    const [aiEvents, menus] = await Promise.all([
       extractEventsWithAI(combinedEventContent, weekStart, weekEnd),
       pizzaContent ? extractPizzaMenusWithAI(pizzaContent, weekStart, weekEnd) : Promise.resolve([]),
     ]);
+
+    // Merge AI-extracted events with iCal-derived events, then dedupe in-batch
+    // so we don't send near-duplicates to the importer (which only dedupes
+    // against the existing DB row-by-row).
+    const mergedEvents = [...icalEvents, ...aiEvents];
+    const { unique: events, dropped: dedupedInRun } = dedupeEvents(mergedEvents);
+    if (dedupedInRun > 0) {
+      console.log(`In-run dedupe removed ${dedupedInRun} duplicate event(s) across iCal + AI sources`);
+    }
 
     // Diagnose pizza failures with a clear signal
     let pizzaStatus = `OK — ${menus.length} menus extracted`;
@@ -543,7 +767,7 @@ serve(async (req) => {
       console.error(pizzaStatus);
     }
 
-    console.log(`Total extracted: ${events.length} events, ${menus.length} pizza menus`);
+    console.log(`Total to import: ${events.length} events (${icalEvents.length} iCal + ${aiEvents.length} AI − ${dedupedInRun} duplicate), ${menus.length} pizza menus`);
 
     // Import to database
     console.log('--- Importing to Database ---');
