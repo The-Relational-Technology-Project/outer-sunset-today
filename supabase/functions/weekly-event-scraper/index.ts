@@ -625,11 +625,20 @@ serve(async (req) => {
       return results;
     };
 
-    const [primaryEventResults, pizzaResults, searchResults] = await Promise.all([
+    const [primaryEventResults, pizzaResults, searchResults, icalResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
       scrapePizzaWithRetry(),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
+      Promise.all(ICAL_SOURCES.map(s => fetchIcalSource(s, weekStart, weekEnd))),
     ]);
+
+    // Collect iCal events directly (no AI). Track source success.
+    const icalEvents: any[] = [];
+    for (const r of icalResults) {
+      sourceResults.push({ name: `${r.name} (iCal)`, success: r.success });
+      icalEvents.push(...r.events);
+    }
+    console.log(`iCal sources contributed ${icalEvents.length} events`);
 
     // Process primary event results
     for (const { name, content } of primaryEventResults) {
