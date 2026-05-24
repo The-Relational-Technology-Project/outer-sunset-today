@@ -699,10 +699,19 @@ serve(async (req) => {
     }
     
     // Run event and pizza extraction in parallel
-    const [events, menus] = await Promise.all([
+    const [aiEvents, menus] = await Promise.all([
       extractEventsWithAI(combinedEventContent, weekStart, weekEnd),
       pizzaContent ? extractPizzaMenusWithAI(pizzaContent, weekStart, weekEnd) : Promise.resolve([]),
     ]);
+
+    // Merge AI-extracted events with iCal-derived events, then dedupe in-batch
+    // so we don't send near-duplicates to the importer (which only dedupes
+    // against the existing DB row-by-row).
+    const mergedEvents = [...icalEvents, ...aiEvents];
+    const { unique: events, dropped: dedupedInRun } = dedupeEvents(mergedEvents);
+    if (dedupedInRun > 0) {
+      console.log(`In-run dedupe removed ${dedupedInRun} duplicate event(s) across iCal + AI sources`);
+    }
 
     // Diagnose pizza failures with a clear signal
     let pizzaStatus = `OK — ${menus.length} menus extracted`;
@@ -719,7 +728,7 @@ serve(async (req) => {
       console.error(pizzaStatus);
     }
 
-    console.log(`Total extracted: ${events.length} events, ${menus.length} pizza menus`);
+    console.log(`Total to import: ${events.length} events (${icalEvents.length} iCal + ${aiEvents.length} AI − ${dedupedInRun} duplicate), ${menus.length} pizza menus`);
 
     // Import to database
     console.log('--- Importing to Database ---');
