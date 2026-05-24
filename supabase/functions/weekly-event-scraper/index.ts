@@ -20,11 +20,16 @@ const PRIMARY_EVENT_PAGES = [
   { name: "Inner Sunset Park Neighbors", url: "https://www.inner-sunset.org/events-2/" },
 ];
 
-// iCal sources - parsed directly, no AI, no truncation. Squarespace exposes ?format=ical.
+// iCal sources - parsed directly, no AI, no truncation. For Squarespace, the
+// page-level `?format=ical` returns HTML, but each individual event exposes a
+// real .ics at `/events/<slug>?format=ical`. We discover those links from the
+// events listing page, then fetch each ical in parallel.
 const ICAL_SOURCES = [
   {
     name: "Sunset Dunes Park",
-    url: "https://sunsetdunes.org/events?format=ical",
+    type: "squarespace-discovery" as const,
+    listUrl: "https://sunsetdunes.org/events/",
+    origin: "https://sunsetdunes.org",
     defaultLocation: "Sunset Dunes",
     defaultEventType: "outdoor",
   },
