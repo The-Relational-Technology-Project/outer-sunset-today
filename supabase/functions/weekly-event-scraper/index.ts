@@ -10,11 +10,15 @@ const corsHeaders = {
 // Source configurations - split into primary (fast) and secondary (additional) batches
 // PRIMARY: High-priority sources that consistently have events
 const PRIMARY_EVENT_PAGES = [
+  { name: "Richmond Sunset News Announcements", url: "https://richmondsunsetnews.com/" },
+  { name: "Civic Joy Fund Cleanups", url: "https://www.mobilize.us/civicjoyfund/" },
   { name: "Blackbird Cafe", url: "https://blackbirdsf.com/pages/events" },
   { name: "Sealevel Studio", url: "https://sealevelsf.com/pages/events" },
   { name: "Sunset Dunes Park", url: "https://sunsetdunes.org/events" },
   { name: "Outer Village", url: "https://www.outervillagesf.com/classes-events" },
   { name: "Ortega Library", url: "https://sfpl.org/events/#!/filters?field_event_location_target_id=46" },
+  { name: "Richmond Library", url: "https://sfpl.org/locations/richmond" },
+  { name: "Inner Sunset Park Neighbors", url: "https://www.inner-sunset.org/events-2/" },
 ];
 
 // SECONDARY: Additional sources, run after primary completes
@@ -24,6 +28,10 @@ const SECONDARY_EVENT_PAGES = [
   { name: "Ocean Plant", url: "https://www.oceanplantsf.com/events" },
   { name: "Case for Making", url: "https://caseformaking.com/pages/cfm-art-room" },
   { name: "Sunset Commons", url: "https://www.eventbrite.com/o/sunset-commons-91470249863" },
+  { name: "Sunset Mercantile", url: "https://sunsetmercantilesf.com/" },
+  { name: "4-Star Theater Popcorn Palace", url: "https://4-star-movies.com/popcorn-palace" },
+  { name: "Dance Garden SF", url: "https://www.dancegardensf.com/" },
+  { name: "SF Nature Education", url: "https://www.sfnature.org/" },
 ];
 
 const PIZZA_SOURCES = [
