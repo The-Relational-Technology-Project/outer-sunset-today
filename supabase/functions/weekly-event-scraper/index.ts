@@ -547,22 +547,56 @@ function parseIcalFeed(
 }
 
 async function fetchIcalSource(
-  source: { name: string; url: string; defaultLocation?: string; defaultEventType?: string },
+  source: {
+    name: string;
+    type: "squarespace-discovery";
+    listUrl: string;
+    origin: string;
+    defaultLocation?: string;
+    defaultEventType?: string;
+  },
   weekStart: string,
   weekEnd: string
 ): Promise<{ name: string; events: any[]; success: boolean }> {
   try {
-    console.log(`Fetching iCal: ${source.url}`);
-    const res = await fetch(source.url, {
+    console.log(`Discovering iCal links: ${source.listUrl}`);
+    const listRes = await fetch(source.listUrl, {
       headers: { 'User-Agent': 'OuterSunsetToday/1.0 (outersunset.today)' },
     });
-    if (!res.ok) {
-      console.error(`iCal fetch failed ${source.name}: ${res.status}`);
+    if (!listRes.ok) {
+      console.error(`iCal listing fetch failed ${source.name}: ${listRes.status}`);
       return { name: source.name, events: [], success: false };
     }
-    const ics = await res.text();
-    const all = parseIcalFeed(ics, source);
-    // Window filter: weekStart <= event_date < weekEnd
+    const html = await listRes.text();
+
+    // Extract unique per-event iCal paths from the listing page.
+    const paths = Array.from(html.matchAll(/href="(\/events\/[^"?#]+\?format=ical)"/g))
+      .map(m => m[1]);
+    const uniquePaths = Array.from(new Set(paths)).slice(0, 80); // safety cap
+    console.log(`iCal ${source.name}: discovered ${uniquePaths.length} event links`);
+
+    if (uniquePaths.length === 0) {
+      return { name: source.name, events: [], success: false };
+    }
+
+    // Fetch each event's ical in parallel.
+    const fetched = await Promise.all(uniquePaths.map(async (p) => {
+      try {
+        const r = await fetch(source.origin + p, {
+          headers: { 'User-Agent': 'OuterSunsetToday/1.0 (outersunset.today)' },
+        });
+        if (!r.ok) return '';
+        return await r.text();
+      } catch { return ''; }
+    }));
+
+    const all: any[] = [];
+    for (const ics of fetched) {
+      if (ics && ics.includes('BEGIN:VEVENT')) {
+        all.push(...parseIcalFeed(ics, source));
+      }
+    }
+
     const inRange = all.filter(e => e.event_date >= weekStart && e.event_date < weekEnd);
     console.log(`iCal ${source.name}: parsed ${all.length}, in-range ${inRange.length}`);
     return { name: source.name, events: inRange, success: true };
