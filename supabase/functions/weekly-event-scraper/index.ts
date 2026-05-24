@@ -14,11 +14,20 @@ const PRIMARY_EVENT_PAGES = [
   { name: "Civic Joy Fund Cleanups", url: "https://www.mobilize.us/civicjoyfund/" },
   { name: "Blackbird Cafe", url: "https://blackbirdsf.com/pages/events" },
   { name: "Sealevel Studio", url: "https://sealevelsf.com/pages/events" },
-  { name: "Sunset Dunes Park", url: "https://sunsetdunes.org/events" },
   { name: "Outer Village", url: "https://www.outervillagesf.com/classes-events" },
   { name: "Ortega Library", url: "https://sfpl.org/events/#!/filters?field_event_location_target_id=46" },
   { name: "Richmond Library", url: "https://sfpl.org/locations/richmond" },
   { name: "Inner Sunset Park Neighbors", url: "https://www.inner-sunset.org/events-2/" },
+];
+
+// iCal sources - parsed directly, no AI, no truncation. Squarespace exposes ?format=ical.
+const ICAL_SOURCES = [
+  {
+    name: "Sunset Dunes Park",
+    url: "https://sunsetdunes.org/events?format=ical",
+    defaultLocation: "Sunset Dunes",
+    defaultEventType: "outdoor",
+  },
 ];
 
 // SECONDARY: Additional sources, run after primary completes
