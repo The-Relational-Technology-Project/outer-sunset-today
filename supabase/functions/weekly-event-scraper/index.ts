@@ -689,8 +689,8 @@ serve(async (req) => {
     const { weekStart, weekEnd } = getDateRange();
     console.log(`Processing week: ${weekStart} to ${weekEnd}`);
 
-    // Collect scraped content separately for events and pizza
-    const eventContent: string[] = [];
+    // Pizza content is collected separately; per-source event content is
+    // collected inline below for per-source AI extraction.
     let pizzaContent: string = '';
     const sourceResults: { name: string; success: boolean }[] = [];
 
