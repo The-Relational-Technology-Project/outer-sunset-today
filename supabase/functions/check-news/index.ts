@@ -204,7 +204,7 @@ Return 1–4 articles. Only include stories scoring 0.6 or above. If only 1 stor
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 2048,
       system: systemPrompt,
       messages: [
