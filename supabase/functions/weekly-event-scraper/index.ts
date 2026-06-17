@@ -150,24 +150,50 @@ async function searchQuery(query: string, apiKey: string): Promise<string | null
   }
 }
 
-// Extract EVENTS with AI
-async function extractEventsWithAI(content: string, weekStart: string, weekEnd: string): Promise<any[]> {
+// Extract EVENTS with AI — called per-source so individual venues don't get
+// drowned out in a giant aggregate prompt, and so relative dates ("Today",
+// "Tomorrow") can be anchored to the actual scrape date.
+async function extractEventsWithAI(
+  content: string,
+  weekStart: string,
+  weekEnd: string,
+  sourceName = 'mixed',
+  sourceUrl = ''
+): Promise<any[]> {
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY not configured');
       return [];
     }
-    
+
+    // Pacific-time "today" for relative-date resolution (Eventbrite uses
+    // "Today • 7:00 PM" / "Tomorrow" instead of absolute dates).
+    const todayPT = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Los_Angeles',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date()); // YYYY-MM-DD
+
+    // Per-source hints help with quirky calendar formats.
+    const sourceHints: Record<string, string> = {
+      'Blackbird Cafe':
+        'Layout pattern: a day-of-month number (e.g. "17") on one line, then "Jun" on the next, then later "Wed, 17 Jun" followed by a time range and a "### Event Title". Pair each title with the nearest preceding date/time block. Capture ALL events in range, even if multiple events share the same date. Default location is "Black Bird Bookstore".',
+      'Sunset Commons':
+        'This is an Eventbrite organizer page. Dates appear as "Today • 7:00 PM", "Tomorrow • ...", or "Sat, Jun 14 • ...". Resolve "Today" to the SCRAPE DATE below and "Tomorrow" to scrape date + 1 day. Default location is "Sunset Commons, 1600 Irving St". A "Sales Ended" badge does NOT mean the event is over — only skip if the event_date itself is outside the date range.',
+    };
+    const hint = sourceHints[sourceName] || '';
+
     const prompt = `You are extracting EVENTS from web content for the Outer Sunset, Outer Richmond, and Inner Sunset neighborhoods of San Francisco.
 
-DATE RANGE: ${weekStart} to ${weekEnd} (Sunday through the following Sunday)
-CURRENT YEAR: 2026
+SOURCE: ${sourceName}${sourceUrl ? ` (${sourceUrl})` : ''}
+SCRAPE DATE (Pacific Time): ${todayPT}
+DATE RANGE (only return events whose date falls inside): ${weekStart} to ${weekEnd}
+CURRENT YEAR: ${todayPT.slice(0, 4)}
 
-For each EVENT, extract:
+${hint ? `SOURCE-SPECIFIC HINT: ${hint}\n` : ''}For each EVENT, extract:
 - title: Event name (clean, concise)
 - location: Venue name (e.g., "Sealevel", "Ortega Library", "Java Beach Cafe"). IMPORTANT: Use "Sealevel" NOT "Sealevel Studio"
-- event_date: YYYY-MM-DD format
+- event_date: YYYY-MM-DD format (resolve "Today"/"Tomorrow" using the SCRAPE DATE above)
 - start_time: HH:MM (24-hour, Pacific Time)
 - end_time: HH:MM if available (optional)
 - description: 1-2 sentence description
@@ -175,8 +201,9 @@ For each EVENT, extract:
 
 IMPORTANT:
 - Skip any events outside the date range
-- Skip duplicates (same event appearing multiple times)
+- Skip duplicates within this source
 - Use 24-hour time format (e.g., 14:00 not 2pm)
+- Be exhaustive: do not summarize. Return every distinct event in range, even small ones.
 
 Return ONLY valid JSON array (no markdown, no explanation):
 [{"title": "...", "location": "...", "event_date": "YYYY-MM-DD", ...}, ...]
@@ -186,8 +213,8 @@ If no events found, return: []
 CONTENT TO ANALYZE:
 ${content}`;
 
-    console.log('Calling AI for event extraction...');
-    
+    console.log(`Calling AI for event extraction [${sourceName}, ${content.length} chars]...`);
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -206,13 +233,13 @@ ${content}`;
     });
 
     if (!response.ok) {
-      console.error('AI event extraction failed:', await response.text());
+      console.error(`AI event extraction failed [${sourceName}]:`, await response.text());
       return [];
     }
 
     const data = await response.json();
     let jsonStr = data.choices?.[0]?.message?.content?.trim() || '[]';
-    
+
     // Clean markdown code blocks
     if (jsonStr.startsWith('```json')) jsonStr = jsonStr.slice(7);
     if (jsonStr.startsWith('```')) jsonStr = jsonStr.slice(3);
@@ -220,10 +247,10 @@ ${content}`;
     jsonStr = jsonStr.trim();
 
     const events = JSON.parse(jsonStr);
-    console.log(`AI extracted: ${events.length} events`);
+    console.log(`AI extracted [${sourceName}]: ${Array.isArray(events) ? events.length : 0} events`);
     return Array.isArray(events) ? events : [];
   } catch (error) {
-    console.error('Error in AI event extraction:', error);
+    console.error(`Error in AI event extraction [${sourceName}]:`, error);
     return [];
   }
 }
@@ -354,10 +381,16 @@ async function importToDatabase(events: any[], menus: any[]): Promise<any> {
 }
 
 // Send notification email
-async function sendNotificationEmail(results: any, weekStart: string, weekEnd: string, pizzaStatus?: string): Promise<void> {
+async function sendNotificationEmail(
+  results: any,
+  weekStart: string,
+  weekEnd: string,
+  pizzaStatus?: string,
+  sourceBreakdown?: { name: string; count: number }[]
+): Promise<void> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    
+
     const eventsInserted = results.events?.inserted || 0;
     const eventsSkipped = results.events?.skipped || 0;
     const menusInserted = results.menus?.inserted || 0;
@@ -367,10 +400,21 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
       ...(results.menus?.errors || [])
     ];
 
+    const breakdownHtml = sourceBreakdown && sourceBreakdown.length > 0
+      ? `<h3>Per-source extraction</h3>
+         <ul>
+           ${sourceBreakdown
+             .slice()
+             .sort((a, b) => b.count - a.count)
+             .map(s => `<li${s.count === 0 ? ' style="color:#b00"' : ''}>${s.name}: <strong>${s.count}</strong>${s.count === 0 ? ' ⚠️ no events extracted' : ''}</li>`)
+             .join('')}
+         </ul>`
+      : '';
+
     const html = `
       <h2>Weekly Event Import Complete</h2>
       <p><strong>Date Range:</strong> ${weekStart} to ${weekEnd}</p>
-      
+
       <h3>Summary</h3>
       <ul>
         <li>Events added: <strong>${eventsInserted}</strong></li>
@@ -379,6 +423,8 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
         <li>Pizza menus updated: ${menusUpdated}</li>
       </ul>
 
+      ${breakdownHtml}
+
       ${pizzaStatus ? `<p><strong>Pizza scrape status:</strong> ${pizzaStatus}</p>` : ''}
       ${errors.length > 0 ? `
         <h3>⚠️ Errors</h3>
@@ -386,7 +432,7 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
           ${errors.map((e: string) => `<li>${e}</li>`).join('')}
         </ul>
       ` : ''}
-      
+
       <p><a href="https://outersunset.today/calendar">View Calendar</a></p>
     `;
 
@@ -643,8 +689,8 @@ serve(async (req) => {
     const { weekStart, weekEnd } = getDateRange();
     console.log(`Processing week: ${weekStart} to ${weekEnd}`);
 
-    // Collect scraped content separately for events and pizza
-    const eventContent: string[] = [];
+    // Pizza content is collected separately; per-source event content is
+    // collected inline below for per-source AI extraction.
     let pizzaContent: string = '';
     const sourceResults: { name: string; success: boolean }[] = [];
 
@@ -671,6 +717,10 @@ serve(async (req) => {
       Promise.all(ICAL_SOURCES.map(s => fetchIcalSource(s, weekStart, weekEnd))),
     ]);
 
+    // Collected per-source { name, url, content } so we can extract per source
+    // (no aggregate truncation, focused prompts, per-source visibility).
+    const perSourceContent: { name: string; url: string; content: string }[] = [];
+
     // Collect iCal events directly (no AI). Track source success.
     const icalEvents: any[] = [];
     for (const r of icalResults) {
@@ -680,9 +730,11 @@ serve(async (req) => {
     console.log(`iCal sources contributed ${icalEvents.length} events`);
 
     // Process primary event results
-    for (const { name, content } of primaryEventResults) {
+    for (let i = 0; i < primaryEventResults.length; i++) {
+      const { name, content } = primaryEventResults[i];
+      const url = PRIMARY_EVENT_PAGES[i].url;
       if (content) {
-        eventContent.push(`=== ${name} ===\n${content}`);
+        perSourceContent.push({ name, url, content });
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
@@ -700,10 +752,11 @@ serve(async (req) => {
       }
     }
 
-    // Process search results
-    for (const { name, content } of searchResults) {
+    // Process search results (web search aggregates — keep grouped under the search name)
+    for (let i = 0; i < searchResults.length; i++) {
+      const { name, content } = searchResults[i];
       if (content) {
-        eventContent.push(`=== ${name} (Search Results) ===\n${content}`);
+        perSourceContent.push({ name: `${name} (search)`, url: '', content });
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
@@ -713,10 +766,12 @@ serve(async (req) => {
     // Run SECONDARY sources after primary completes
     console.log('--- Scraping Secondary Sources ---');
     const secondaryEventResults = await scrapeBatch(SECONDARY_EVENT_PAGES, firecrawlApiKey, 2000);
-    
-    for (const { name, content } of secondaryEventResults) {
+
+    for (let i = 0; i < secondaryEventResults.length; i++) {
+      const { name, content } = secondaryEventResults[i];
+      const url = SECONDARY_EVENT_PAGES[i].url;
       if (content) {
-        eventContent.push(`=== ${name} ===\n${content}`);
+        perSourceContent.push({ name, url, content });
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
@@ -727,25 +782,40 @@ serve(async (req) => {
     const totalSources = sourceResults.length;
     console.log(`Scraped ${successfulSources}/${totalSources} sources successfully`);
 
-    // Extract events and pizza menus SEPARATELY with AI
-    console.log('--- Extracting with AI ---');
-    
-    // Combine event content (truncate if needed)
-    let combinedEventContent = eventContent.join('\n\n========================================\n\n');
-    if (combinedEventContent.length > 60000) {
-      console.log(`Truncating event content from ${combinedEventContent.length} to 60000 chars`);
-      combinedEventContent = combinedEventContent.slice(0, 60000);
-    }
-    
-    // Run event and pizza extraction in parallel
-    const [aiEvents, menus] = await Promise.all([
-      extractEventsWithAI(combinedEventContent, weekStart, weekEnd),
+    // Extract events PER SOURCE in parallel — eliminates the aggregate-truncation
+    // bottleneck that was causing individual venues (Black Bird, Sunset Commons)
+    // to get lost in a 60k-char blob. Each call gets a focused prompt with
+    // source-specific hints + the scrape date for relative-date resolution.
+    console.log('--- Extracting with AI (per-source) ---');
+
+    // Cap each source's content to keep individual prompts reasonable.
+    const PER_SOURCE_CAP = 30000;
+
+    const [perSourceExtractions, menus] = await Promise.all([
+      Promise.all(perSourceContent.map(async (s) => {
+        const trimmed = s.content.length > PER_SOURCE_CAP ? s.content.slice(0, PER_SOURCE_CAP) : s.content;
+        const events = await extractEventsWithAI(trimmed, weekStart, weekEnd, s.name, s.url);
+        return { name: s.name, events };
+      })),
       pizzaContent ? extractPizzaMenusWithAI(pizzaContent, weekStart, weekEnd) : Promise.resolve([]),
     ]);
 
+    // Flatten + build per-source breakdown for visibility
+    const aiEvents: any[] = [];
+    const sourceBreakdown: { name: string; count: number }[] = [];
+    for (const r of perSourceExtractions) {
+      sourceBreakdown.push({ name: r.name, count: r.events.length });
+      aiEvents.push(...r.events);
+      if (r.events.length === 0) {
+        console.warn(`EXTRACTION_EMPTY: source "${r.name}" returned 0 events`);
+      }
+    }
+    // Add iCal breakdown
+    for (const r of icalResults) {
+      sourceBreakdown.push({ name: `${r.name} (iCal)`, count: r.events.length });
+    }
+
     // Merge AI-extracted events with iCal-derived events, then dedupe in-batch
-    // so we don't send near-duplicates to the importer (which only dedupes
-    // against the existing DB row-by-row).
     const mergedEvents = [...icalEvents, ...aiEvents];
     const { unique: events, dropped: dedupedInRun } = dedupeEvents(mergedEvents);
     if (dedupedInRun > 0) {
@@ -773,8 +843,8 @@ serve(async (req) => {
     console.log('--- Importing to Database ---');
     const importResults = await importToDatabase(events, menus);
 
-    // Send notification email (include pizza diagnostic)
-    await sendNotificationEmail(importResults, weekStart, weekEnd, pizzaStatus);
+    // Send notification email (include pizza diagnostic + per-source breakdown)
+    await sendNotificationEmail(importResults, weekStart, weekEnd, pizzaStatus, sourceBreakdown);
 
     const response = {
       success: true,
