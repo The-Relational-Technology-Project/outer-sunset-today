@@ -150,24 +150,50 @@ async function searchQuery(query: string, apiKey: string): Promise<string | null
   }
 }
 
-// Extract EVENTS with AI
-async function extractEventsWithAI(content: string, weekStart: string, weekEnd: string): Promise<any[]> {
+// Extract EVENTS with AI — called per-source so individual venues don't get
+// drowned out in a giant aggregate prompt, and so relative dates ("Today",
+// "Tomorrow") can be anchored to the actual scrape date.
+async function extractEventsWithAI(
+  content: string,
+  weekStart: string,
+  weekEnd: string,
+  sourceName = 'mixed',
+  sourceUrl = ''
+): Promise<any[]> {
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY not configured');
       return [];
     }
-    
+
+    // Pacific-time "today" for relative-date resolution (Eventbrite uses
+    // "Today • 7:00 PM" / "Tomorrow" instead of absolute dates).
+    const todayPT = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Los_Angeles',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date()); // YYYY-MM-DD
+
+    // Per-source hints help with quirky calendar formats.
+    const sourceHints: Record<string, string> = {
+      'Blackbird Cafe':
+        'Layout pattern: a day-of-month number (e.g. "17") on one line, then "Jun" on the next, then later "Wed, 17 Jun" followed by a time range and a "### Event Title". Pair each title with the nearest preceding date/time block. Capture ALL events in range, even if multiple events share the same date. Default location is "Black Bird Bookstore".',
+      'Sunset Commons':
+        'This is an Eventbrite organizer page. Dates appear as "Today • 7:00 PM", "Tomorrow • ...", or "Sat, Jun 14 • ...". Resolve "Today" to the SCRAPE DATE below and "Tomorrow" to scrape date + 1 day. Default location is "Sunset Commons, 1600 Irving St". A "Sales Ended" badge does NOT mean the event is over — only skip if the event_date itself is outside the date range.',
+    };
+    const hint = sourceHints[sourceName] || '';
+
     const prompt = `You are extracting EVENTS from web content for the Outer Sunset, Outer Richmond, and Inner Sunset neighborhoods of San Francisco.
 
-DATE RANGE: ${weekStart} to ${weekEnd} (Sunday through the following Sunday)
-CURRENT YEAR: 2026
+SOURCE: ${sourceName}${sourceUrl ? ` (${sourceUrl})` : ''}
+SCRAPE DATE (Pacific Time): ${todayPT}
+DATE RANGE (only return events whose date falls inside): ${weekStart} to ${weekEnd}
+CURRENT YEAR: ${todayPT.slice(0, 4)}
 
-For each EVENT, extract:
+${hint ? `SOURCE-SPECIFIC HINT: ${hint}\n` : ''}For each EVENT, extract:
 - title: Event name (clean, concise)
 - location: Venue name (e.g., "Sealevel", "Ortega Library", "Java Beach Cafe"). IMPORTANT: Use "Sealevel" NOT "Sealevel Studio"
-- event_date: YYYY-MM-DD format
+- event_date: YYYY-MM-DD format (resolve "Today"/"Tomorrow" using the SCRAPE DATE above)
 - start_time: HH:MM (24-hour, Pacific Time)
 - end_time: HH:MM if available (optional)
 - description: 1-2 sentence description
@@ -175,8 +201,9 @@ For each EVENT, extract:
 
 IMPORTANT:
 - Skip any events outside the date range
-- Skip duplicates (same event appearing multiple times)
+- Skip duplicates within this source
 - Use 24-hour time format (e.g., 14:00 not 2pm)
+- Be exhaustive: do not summarize. Return every distinct event in range, even small ones.
 
 Return ONLY valid JSON array (no markdown, no explanation):
 [{"title": "...", "location": "...", "event_date": "YYYY-MM-DD", ...}, ...]
@@ -186,8 +213,8 @@ If no events found, return: []
 CONTENT TO ANALYZE:
 ${content}`;
 
-    console.log('Calling AI for event extraction...');
-    
+    console.log(`Calling AI for event extraction [${sourceName}, ${content.length} chars]...`);
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -206,13 +233,13 @@ ${content}`;
     });
 
     if (!response.ok) {
-      console.error('AI event extraction failed:', await response.text());
+      console.error(`AI event extraction failed [${sourceName}]:`, await response.text());
       return [];
     }
 
     const data = await response.json();
     let jsonStr = data.choices?.[0]?.message?.content?.trim() || '[]';
-    
+
     // Clean markdown code blocks
     if (jsonStr.startsWith('```json')) jsonStr = jsonStr.slice(7);
     if (jsonStr.startsWith('```')) jsonStr = jsonStr.slice(3);
@@ -220,10 +247,10 @@ ${content}`;
     jsonStr = jsonStr.trim();
 
     const events = JSON.parse(jsonStr);
-    console.log(`AI extracted: ${events.length} events`);
+    console.log(`AI extracted [${sourceName}]: ${Array.isArray(events) ? events.length : 0} events`);
     return Array.isArray(events) ? events : [];
   } catch (error) {
-    console.error('Error in AI event extraction:', error);
+    console.error(`Error in AI event extraction [${sourceName}]:`, error);
     return [];
   }
 }
