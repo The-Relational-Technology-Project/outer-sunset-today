@@ -381,10 +381,16 @@ async function importToDatabase(events: any[], menus: any[]): Promise<any> {
 }
 
 // Send notification email
-async function sendNotificationEmail(results: any, weekStart: string, weekEnd: string, pizzaStatus?: string): Promise<void> {
+async function sendNotificationEmail(
+  results: any,
+  weekStart: string,
+  weekEnd: string,
+  pizzaStatus?: string,
+  sourceBreakdown?: { name: string; count: number }[]
+): Promise<void> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    
+
     const eventsInserted = results.events?.inserted || 0;
     const eventsSkipped = results.events?.skipped || 0;
     const menusInserted = results.menus?.inserted || 0;
@@ -394,10 +400,21 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
       ...(results.menus?.errors || [])
     ];
 
+    const breakdownHtml = sourceBreakdown && sourceBreakdown.length > 0
+      ? `<h3>Per-source extraction</h3>
+         <ul>
+           ${sourceBreakdown
+             .slice()
+             .sort((a, b) => b.count - a.count)
+             .map(s => `<li${s.count === 0 ? ' style="color:#b00"' : ''}>${s.name}: <strong>${s.count}</strong>${s.count === 0 ? ' ⚠️ no events extracted' : ''}</li>`)
+             .join('')}
+         </ul>`
+      : '';
+
     const html = `
       <h2>Weekly Event Import Complete</h2>
       <p><strong>Date Range:</strong> ${weekStart} to ${weekEnd}</p>
-      
+
       <h3>Summary</h3>
       <ul>
         <li>Events added: <strong>${eventsInserted}</strong></li>
@@ -406,6 +423,8 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
         <li>Pizza menus updated: ${menusUpdated}</li>
       </ul>
 
+      ${breakdownHtml}
+
       ${pizzaStatus ? `<p><strong>Pizza scrape status:</strong> ${pizzaStatus}</p>` : ''}
       ${errors.length > 0 ? `
         <h3>⚠️ Errors</h3>
@@ -413,7 +432,7 @@ async function sendNotificationEmail(results: any, weekStart: string, weekEnd: s
           ${errors.map((e: string) => `<li>${e}</li>`).join('')}
         </ul>
       ` : ''}
-      
+
       <p><a href="https://outersunset.today/calendar">View Calendar</a></p>
     `;
 
