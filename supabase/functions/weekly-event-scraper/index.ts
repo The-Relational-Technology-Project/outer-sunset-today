@@ -698,6 +698,10 @@ serve(async (req) => {
       Promise.all(ICAL_SOURCES.map(s => fetchIcalSource(s, weekStart, weekEnd))),
     ]);
 
+    // Collected per-source { name, url, content } so we can extract per source
+    // (no aggregate truncation, focused prompts, per-source visibility).
+    const perSourceContent: { name: string; url: string; content: string }[] = [];
+
     // Collect iCal events directly (no AI). Track source success.
     const icalEvents: any[] = [];
     for (const r of icalResults) {
@@ -707,9 +711,11 @@ serve(async (req) => {
     console.log(`iCal sources contributed ${icalEvents.length} events`);
 
     // Process primary event results
-    for (const { name, content } of primaryEventResults) {
+    for (let i = 0; i < primaryEventResults.length; i++) {
+      const { name, content } = primaryEventResults[i];
+      const url = PRIMARY_EVENT_PAGES[i].url;
       if (content) {
-        eventContent.push(`=== ${name} ===\n${content}`);
+        perSourceContent.push({ name, url, content });
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
@@ -727,10 +733,11 @@ serve(async (req) => {
       }
     }
 
-    // Process search results
-    for (const { name, content } of searchResults) {
+    // Process search results (web search aggregates — keep grouped under the search name)
+    for (let i = 0; i < searchResults.length; i++) {
+      const { name, content } = searchResults[i];
       if (content) {
-        eventContent.push(`=== ${name} (Search Results) ===\n${content}`);
+        perSourceContent.push({ name: `${name} (search)`, url: '', content });
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
@@ -740,10 +747,12 @@ serve(async (req) => {
     // Run SECONDARY sources after primary completes
     console.log('--- Scraping Secondary Sources ---');
     const secondaryEventResults = await scrapeBatch(SECONDARY_EVENT_PAGES, firecrawlApiKey, 2000);
-    
-    for (const { name, content } of secondaryEventResults) {
+
+    for (let i = 0; i < secondaryEventResults.length; i++) {
+      const { name, content } = secondaryEventResults[i];
+      const url = SECONDARY_EVENT_PAGES[i].url;
       if (content) {
-        eventContent.push(`=== ${name} ===\n${content}`);
+        perSourceContent.push({ name, url, content });
         sourceResults.push({ name, success: true });
       } else {
         sourceResults.push({ name, success: false });
@@ -754,25 +763,40 @@ serve(async (req) => {
     const totalSources = sourceResults.length;
     console.log(`Scraped ${successfulSources}/${totalSources} sources successfully`);
 
-    // Extract events and pizza menus SEPARATELY with AI
-    console.log('--- Extracting with AI ---');
-    
-    // Combine event content (truncate if needed)
-    let combinedEventContent = eventContent.join('\n\n========================================\n\n');
-    if (combinedEventContent.length > 60000) {
-      console.log(`Truncating event content from ${combinedEventContent.length} to 60000 chars`);
-      combinedEventContent = combinedEventContent.slice(0, 60000);
-    }
-    
-    // Run event and pizza extraction in parallel
-    const [aiEvents, menus] = await Promise.all([
-      extractEventsWithAI(combinedEventContent, weekStart, weekEnd),
+    // Extract events PER SOURCE in parallel — eliminates the aggregate-truncation
+    // bottleneck that was causing individual venues (Black Bird, Sunset Commons)
+    // to get lost in a 60k-char blob. Each call gets a focused prompt with
+    // source-specific hints + the scrape date for relative-date resolution.
+    console.log('--- Extracting with AI (per-source) ---');
+
+    // Cap each source's content to keep individual prompts reasonable.
+    const PER_SOURCE_CAP = 30000;
+
+    const [perSourceExtractions, menus] = await Promise.all([
+      Promise.all(perSourceContent.map(async (s) => {
+        const trimmed = s.content.length > PER_SOURCE_CAP ? s.content.slice(0, PER_SOURCE_CAP) : s.content;
+        const events = await extractEventsWithAI(trimmed, weekStart, weekEnd, s.name, s.url);
+        return { name: s.name, events };
+      })),
       pizzaContent ? extractPizzaMenusWithAI(pizzaContent, weekStart, weekEnd) : Promise.resolve([]),
     ]);
 
+    // Flatten + build per-source breakdown for visibility
+    const aiEvents: any[] = [];
+    const sourceBreakdown: { name: string; count: number }[] = [];
+    for (const r of perSourceExtractions) {
+      sourceBreakdown.push({ name: r.name, count: r.events.length });
+      aiEvents.push(...r.events);
+      if (r.events.length === 0) {
+        console.warn(`EXTRACTION_EMPTY: source "${r.name}" returned 0 events`);
+      }
+    }
+    // Add iCal breakdown
+    for (const r of icalResults) {
+      sourceBreakdown.push({ name: `${r.name} (iCal)`, count: r.events.length });
+    }
+
     // Merge AI-extracted events with iCal-derived events, then dedupe in-batch
-    // so we don't send near-duplicates to the importer (which only dedupes
-    // against the existing DB row-by-row).
     const mergedEvents = [...icalEvents, ...aiEvents];
     const { unique: events, dropped: dedupedInRun } = dedupeEvents(mergedEvents);
     if (dedupedInRun > 0) {
@@ -800,8 +824,8 @@ serve(async (req) => {
     console.log('--- Importing to Database ---');
     const importResults = await importToDatabase(events, menus);
 
-    // Send notification email (include pizza diagnostic)
-    await sendNotificationEmail(importResults, weekStart, weekEnd, pizzaStatus);
+    // Send notification email (include pizza diagnostic + per-source breakdown)
+    await sendNotificationEmail(importResults, weekStart, weekEnd, pizzaStatus, sourceBreakdown);
 
     const response = {
       success: true,
