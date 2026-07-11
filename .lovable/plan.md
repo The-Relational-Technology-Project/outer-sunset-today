@@ -1,35 +1,64 @@
-# Pizza menu scraper — diagnosis & hardening
+## Root cause
 
-## What I found
+`bulk-import-events/index.ts` and `add-events/index.ts` both hardcode the Pacific offset as `-08:00` when building the ISO timestamp:
 
-**This week's menus are now correct.** I manually re-ran `weekly-event-scraper` and it inserted 6 new pizza menus + updated the existing May 17 entry. All 7 entries (Tue May 19 → Sun May 24, plus the corrected May 17) match your screenshot of arizmendibakery.com/pizza exactly. Monday May 18 is correctly skipped.
+```ts
+const startTime = `${eventDate}T${event.start_time}:00-08:00`;
+```
 
-So the **data is backfilled** — no further action needed there.
+That's correct in PST (winter) but wrong in PDT (daylight saving, ~Mar 8 – Nov 1). Any event ingested for a summer date is stored 1 hour late.
 
-## Why Sunday's cron returned 0 menus
+Example (both currently in DB):
+- **Children's Music with Toby** (Sat Jul 11) — stored `17:30 UTC` (10:30 PDT). Source: 9:30 AM PDT → should be `16:30 UTC`.
+- **Zumba and Shake the Fog!** (Sat Jul 11) — stored `18:30 UTC` (11:30 PDT). Source: 10:30 AM PDT → should be `17:30 UTC`.
 
-The Arizmendi page is actually **static HTML** (a plain `<table>`, no JavaScript rendering). Firecrawl scrapes it reliably on demand. The cron run almost certainly failed for one of these transient reasons:
+The scraper (`weekly-event-scraper`) posts through `bulk-import-events`, so its output has the same bug. Same for the manual admin import path via `add-events`. `submit-event`, `scan-event-flyer`, and the iCal path in the scraper already handle Pacific correctly (they don't hardcode `-08:00`).
 
-1. **Firecrawl returned only `markdown` (not `html`)** on that request. Our scrape call asks for `formats: ['html']` only, and `scrapeUrl` then does `html || markdown` — but since markdown was never requested, there's no fallback if `html` is missing for any reason.
-2. **Firecrawl rate-limit / 5xx / timeout** on that one call (we don't retry).
-3. **AI extraction returned `[]`** silently — the only "no menus" log line is `AI extracted: 0` and we can't tell empty-content vs. empty-response apart.
+Impact: 325 approved events fall in the DST window (Mar 8 – Nov 1, 2026); the majority ingested via bulk import are affected.
 
-There is currently no retry, no fallback format, and no visibility into which of the above happened.
+## Fix
 
-## Proposed fix
+1. **Fix the two reported events** with a direct update:
+   - Toby Jul 11 → `start_time = 2026-07-11 16:30 UTC`, `end_time = 2026-07-11 17:10 UTC`.
+   - Zumba Jul 11 → `start_time = 2026-07-11 17:30 UTC`, `end_time = 2026-07-11 18:15 UTC`.
 
-Edit only `supabase/functions/weekly-event-scraper/index.ts`:
+2. **Fix the ingest bug** in `bulk-import-events/index.ts` and `add-events/index.ts`. Replace the hardcoded `-08:00` with a helper that returns the correct offset for the given `event_date` in `America/Los_Angeles`:
 
-1. **Request both formats for pizza:** change the pizza scrape from `['html']` to `['html', 'markdown']`. `scrapeUrl` already prefers `html` and falls back to `markdown`, so we get a free safety net at no extra cost.
+   ```ts
+   // Returns "-07:00" or "-08:00" for the given YYYY-MM-DD in Pacific Time.
+   function pacificOffset(dateStr: string): string {
+     const probe = new Date(`${dateStr}T12:00:00Z`);
+     const parts = new Intl.DateTimeFormat('en-US', {
+       timeZone: 'America/Los_Angeles',
+       timeZoneName: 'shortOffset',
+     }).formatToParts(probe);
+     const tz = parts.find(p => p.type === 'timeZoneName')?.value ?? 'GMT-8';
+     const m = tz.match(/GMT([+-]\d+)/);
+     const hours = m ? parseInt(m[1], 10) : -8;
+     const sign = hours < 0 ? '-' : '+';
+     return `${sign}${String(Math.abs(hours)).padStart(2, '0')}:00`;
+   }
+   ```
 
-2. **Retry the pizza scrape once on failure.** If `scrapeUrl` returns `null` or content shorter than ~500 chars (a sign the table didn't load), wait 3s and retry once before giving up. Pizza is a single critical URL so a targeted retry is cheap.
+   Then: `const offset = pacificOffset(event.event_date); const startTime = \`${event.event_date}T${event.start_time}:00${offset}\`;`
 
-3. **Log a clear failure signal.** If `pizzaContent` ends up empty OR `extractPizzaMenusWithAI` returns `[]`, log `PIZZA_SCRAPE_FAILED` with the content length and a snippet, and include a `pizza_status` field in the email notification (e.g. "Pizza scrape: 0 menus — source returned X chars"). This means next time it silently fails, your weekly email will tell you immediately instead of just showing "0".
+3. **Backfill the existing off-by-one events.** Shift `start_time` and `end_time` back by 1 hour for every approved event whose date is in the DST window AND whose stored offset is UTC (`+00`) — matches the 325 events created via the two buggy endpoints. Scope guard: only rows where the local time in the stored UTC value falls on the wrong side of what PDT would produce. Concretely: `event_date BETWEEN '2026-03-08' AND '2026-11-01'` and stored as UTC via the buggy path.
 
-4. **Sanity check the AI output:** if AI returns 0 menus but `pizzaContent` clearly contains the calendar (we can check for the string `yasp-item` in the html), log that as an AI-extraction failure specifically rather than a scrape failure.
+   Because iCal-scraped rows and the two DST-safe endpoints (`submit-event`, `scan-event-flyer`) also store UTC, we can't distinguish them from the offset alone. To avoid shifting correct rows, restrict the backfill to events created by the bulk pipelines. Two safe options — pick one when implementing:
+   - **(a) narrow by created_at:** shift only rows in the DST window whose `created_at` predates the code fix deploy timestamp AND that were inserted by bulk import (identifiable by lack of `submitter_email`, since submit-event always sets one and scan-event-flyer flows through submit path).
+   - **(b) spot-check + targeted list:** query a sample by venue/source, confirm the 1-hour offset visually against a couple of source pages, and run the shift only for the confirmed cohort.
 
-No changes to the date-range logic, the AI prompt content, or the bulk-import function. Existing behavior for events is untouched.
+   Recommend (a) with a dry-run `SELECT` first so the exact row count and a sample are reviewed before the `UPDATE` runs.
 
-## Deployment
+4. **Redeploy** `bulk-import-events` and `add-events`. Scraper doesn't need redeploy (unchanged), but next Sunday's cron will now insert correctly.
 
-Redeploy `weekly-event-scraper` after the edit. Next Sunday's cron run will use the hardened version; you'll also get a clearer signal in the weekly email if anything fails again.
+## Out of scope
+
+- No change to display code (`useEvents`, `EventCard`) — data will be correct after the fix.
+- No change to `weekly-event-scraper` logic, `submit-event`, `scan-event-flyer`, or iCal parsing (already correct).
+- Winter (PST) events are unaffected.
+
+## Verification
+
+- After fix + backfill, re-check the two example events show 9:30 AM and 10:30 AM in the UI.
+- Spot-check Farmers Market (should be 9:00 AM PDT, currently 10:00 AM), and a couple of scraper-ingested events against their source pages.
