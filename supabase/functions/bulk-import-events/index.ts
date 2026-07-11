@@ -132,8 +132,9 @@ serve(async (req) => {
 
         // Parse times and create timestamps
         const eventDate = event.event_date;
-        const startTime = `${eventDate}T${event.start_time}:00-08:00`;
-        const endTime = event.end_time ? `${eventDate}T${event.end_time}:00-08:00` : null;
+        const offset = pacificOffset(eventDate);
+        const startTime = `${eventDate}T${event.start_time}:00${offset}`;
+        const endTime = event.end_time ? `${eventDate}T${event.end_time}:00${offset}` : null;
 
         // Insert event with auto-approved status
         const { data: inserted, error: insertError } = await supabase
