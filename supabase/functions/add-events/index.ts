@@ -70,8 +70,9 @@ serve(async (req) => {
         }
 
         // Parse times
-        const startTime = `${event.event_date}T${event.start_time}:00-08:00`;
-        const endTime = event.end_time ? `${event.event_date}T${event.end_time}:00-08:00` : null;
+        const offset = pacificOffset(event.event_date);
+        const startTime = `${event.event_date}T${event.start_time}:00${offset}`;
+        const endTime = event.end_time ? `${event.event_date}T${event.end_time}:00${offset}` : null;
 
         const { error } = await supabase
           .from('events')
