@@ -17,6 +17,20 @@ interface EventInput {
   status?: string;
 }
 
+// Returns the correct Pacific Time UTC offset for the given YYYY-MM-DD.
+function pacificOffset(dateStr: string): string {
+  const probe = new Date(`${dateStr}T12:00:00Z`);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    timeZoneName: 'shortOffset',
+  }).formatToParts(probe);
+  const tz = parts.find(p => p.type === 'timeZoneName')?.value ?? 'GMT-8';
+  const m = tz.match(/GMT([+-]?\d+)/);
+  const hours = m ? parseInt(m[1], 10) : -8;
+  const sign = hours < 0 ? '-' : '+';
+  return `${sign}${String(Math.abs(hours)).padStart(2, '0')}:00`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
