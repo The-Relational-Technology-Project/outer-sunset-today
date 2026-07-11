@@ -44,6 +44,22 @@ function normalizeLocation(location: string): string {
   return location;
 }
 
+// Returns the correct Pacific Time UTC offset ("-07:00" during PDT, "-08:00" during PST)
+// for the given YYYY-MM-DD date. Hardcoding -08:00 caused summer events to be stored
+// 1 hour late.
+function pacificOffset(dateStr: string): string {
+  const probe = new Date(`${dateStr}T12:00:00Z`);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    timeZoneName: 'shortOffset',
+  }).formatToParts(probe);
+  const tz = parts.find(p => p.type === 'timeZoneName')?.value ?? 'GMT-8';
+  const m = tz.match(/GMT([+-]?\d+)/);
+  const hours = m ? parseInt(m[1], 10) : -8;
+  const sign = hours < 0 ? '-' : '+';
+  return `${sign}${String(Math.abs(hours)).padStart(2, '0')}:00`;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -116,8 +132,9 @@ serve(async (req) => {
 
         // Parse times and create timestamps
         const eventDate = event.event_date;
-        const startTime = `${eventDate}T${event.start_time}:00-08:00`;
-        const endTime = event.end_time ? `${eventDate}T${event.end_time}:00-08:00` : null;
+        const offset = pacificOffset(eventDate);
+        const startTime = `${eventDate}T${event.start_time}:00${offset}`;
+        const endTime = event.end_time ? `${eventDate}T${event.end_time}:00${offset}` : null;
 
         // Insert event with auto-approved status
         const { data: inserted, error: insertError } = await supabase
