@@ -10,8 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getFlyerImageUrl, type FlyerSubmission } from "@/hooks/useFlyerSubmissions";
 import { type ContactSubmission } from "@/hooks/useContactSubmissions";
 import { CheckCircle, XCircle, Lock, Image as ImageIcon, Mail, Archive, Sparkles, Eye } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FlyerImageDialog } from "@/components/FlyerImageDialog";
 import { EventConfirmationDialog } from "@/components/EventConfirmationDialog";
 
