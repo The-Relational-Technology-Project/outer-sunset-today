@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Calendar as CalendarIcon, Plus, Check } from "lucide-react";
+import { Clock, MapPin, Calendar as CalendarIcon, Plus, Check, ExternalLink } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { toast } from "sonner";
 import { getVibeTag } from "@/utils/vibesTags";
@@ -16,6 +16,7 @@ interface EventCardProps {
     category: string;
     date?: string;
     isToday?: boolean;
+    source_url?: string | null;
   };
   compact?: boolean;
   showAddToPlan?: boolean;
