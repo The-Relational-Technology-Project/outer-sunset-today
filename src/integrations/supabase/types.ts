@@ -134,6 +134,7 @@ export type Database = {
           event_type: string
           id: string
           location: string
+          source_url: string | null
           start_time: string
           status: string
           title: string
@@ -147,6 +148,7 @@ export type Database = {
           event_type: string
           id?: string
           location: string
+          source_url?: string | null
           start_time: string
           status?: string
           title: string
@@ -160,6 +162,7 @@ export type Database = {
           event_type?: string
           id?: string
           location?: string
+          source_url?: string | null
           start_time?: string
           status?: string
           title?: string
