@@ -84,6 +84,7 @@ serve(async (req) => {
             end_time: endTime,
             description: event.description || null,
             event_type: event.event_type,
+            source_url: event.source_url || null,
             status: event.status || 'approved',
             archived: false
           });
