@@ -33,6 +33,14 @@ const ICAL_SOURCES = [
     defaultLocation: "Sunset Dunes",
     defaultEventType: "outdoor",
   },
+  {
+    name: "Far Out West Community",
+    type: "squarespace-discovery" as const,
+    listUrl: "https://www.faroutwestcommunity.org/event-calendar",
+    origin: "https://www.faroutwestcommunity.org",
+    defaultLocation: "Far Out West Community Garden, 43rd Avenue",
+    defaultEventType: "community",
+  },
 ];
 
 // SECONDARY: Additional sources, run after primary completes
