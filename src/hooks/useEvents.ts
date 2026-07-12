@@ -11,6 +11,7 @@ export interface Event {
   event_date: string;
   event_type: string;
   description: string | null;
+  source_url?: string | null;
   isToday?: boolean;
 }
 
