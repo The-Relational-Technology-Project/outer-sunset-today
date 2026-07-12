@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.custom_update_subscriptions CASCADE; DROP TABLE IF EXISTS public.custom_updates CASCADE;
