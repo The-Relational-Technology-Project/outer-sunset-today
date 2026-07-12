@@ -11,6 +11,7 @@ export interface Event {
   event_date: string;
   event_type: string;
   description: string | null;
+  source_url?: string | null;
   isToday?: boolean;
 }
 
@@ -97,7 +98,7 @@ export function formatEventForCard(event: Event) {
       minute: '2-digit',
       hour12: true 
     }),
-    date: startTime.toLocaleDateString('en-US', { 
+    date: startTime.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'short',
       day: 'numeric'
@@ -105,6 +106,7 @@ export function formatEventForCard(event: Event) {
     location: event.location,
     description: event.description || `Join us at ${event.location} for this event.`,
     category: event.event_type,
+    source_url: event.source_url ?? null,
     isToday: event.isToday
   };
 }

@@ -558,7 +558,7 @@ function parseIcalDateTime(rawKey: string, value: string): { date: string; time:
 // Parse an iCal feed into structured events for our import format.
 function parseIcalFeed(
   ics: string,
-  source: { name: string; defaultLocation?: string; defaultEventType?: string }
+  source: { name: string; defaultLocation?: string; defaultEventType?: string; listUrl?: string }
 ): any[] {
   const lines = unfoldIcal(ics);
   const events: any[] = [];
@@ -580,6 +580,7 @@ function parseIcalFeed(
             end_time: end?.time || undefined,
             description: cur.DESCRIPTION ? unescapeIcalText(cur.DESCRIPTION).slice(0, 500) : undefined,
             event_type: source.defaultEventType || 'community',
+            source_url: cur.URL ? unescapeIcalText(cur.URL) : (source.listUrl || undefined),
           });
         }
       }
@@ -599,6 +600,7 @@ function parseIcalFeed(
 
   return events;
 }
+
 
 async function fetchIcalSource(
   source: {

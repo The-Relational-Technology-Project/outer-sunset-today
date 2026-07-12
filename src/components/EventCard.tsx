@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Calendar as CalendarIcon, Plus, Check } from "lucide-react";
+import { Clock, MapPin, Calendar as CalendarIcon, Plus, Check, ExternalLink } from "lucide-react";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 import { toast } from "sonner";
 import { getVibeTag } from "@/utils/vibesTags";
@@ -16,6 +16,7 @@ interface EventCardProps {
     category: string;
     date?: string;
     isToday?: boolean;
+    source_url?: string | null;
   };
   compact?: boolean;
   showAddToPlan?: boolean;
@@ -81,26 +82,41 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
           </p>
         )}
         
-        {showAddToPlan && (
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              variant={isInPlan(event.id) ? "default" : "outline"}
-              onClick={handleAddToPlan}
-              className="sticker-button text-sm bg-coral hover:bg-coral/90 text-coral-foreground"
-            >
-              {isInPlan(event.id) ? (
-                <>
-                  <Check className="h-4 w-4 mr-1" />
-                  Added to Plan
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add to My Plan
-                </>
-              )}
-            </Button>
+        {(showAddToPlan || event.source_url) && (
+          <div className="flex items-center justify-end gap-3">
+            {event.source_url && (
+              <a
+                href={event.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={(() => { try { return new URL(event.source_url!).hostname; } catch { return event.source_url!; } })()}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Source
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+            {showAddToPlan && (
+              <Button
+                size="sm"
+                variant={isInPlan(event.id) ? "default" : "outline"}
+                onClick={handleAddToPlan}
+                className="sticker-button text-sm bg-coral hover:bg-coral/90 text-coral-foreground"
+              >
+                {isInPlan(event.id) ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Added to Plan
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add to My Plan
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

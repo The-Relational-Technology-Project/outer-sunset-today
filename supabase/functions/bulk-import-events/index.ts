@@ -147,6 +147,7 @@ serve(async (req) => {
             end_time: endTime,
             description: event.description || null,
             event_type: event.event_type,
+            source_url: event.source_url || null,
             status: 'approved', // Auto-approve from n8n
             archived: false
           })

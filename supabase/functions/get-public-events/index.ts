@@ -178,6 +178,7 @@ function transformEvent(event: {
   event_type: string;
   location: string;
   created_at: string;
+  source_url?: string | null;
 }) {
   return {
     id: event.id,
@@ -190,7 +191,7 @@ function transformEvent(event: {
       name: event.location,
       neighborhood: NEIGHBORHOOD,
     },
-    url: 'https://outersunset.today/calendar',
+    url: event.source_url || 'https://outersunset.today/calendar',
     source: {
       publisher: PUBLISHER,
       collected_at: event.created_at,

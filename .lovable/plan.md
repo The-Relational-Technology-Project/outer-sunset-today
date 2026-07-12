@@ -1,34 +1,37 @@
-## 1. Add Far Out West to the weekly scraper
+# Add event provenance links
 
-In `supabase/functions/weekly-event-scraper/index.ts`, append a new entry to `ICAL_SOURCES` using the proven Squarespace-discovery pattern (same shape as Sunset Dunes):
+Give every event a "Source" link (opens in new tab) next to the "Add to My Plan" button so users can jump to the original listing or venue page.
 
-```ts
-{
-  name: "Far Out West Community",
-  type: "squarespace-discovery",
-  listUrl: "https://www.faroutwestcommunity.org/event-calendar",
-  origin: "https://www.faroutwestcommunity.org",
-  defaultLocation: "Far Out West Community Garden, 43rd Avenue",
-  defaultEventType: "community",
-},
-```
+## 1. Data model
 
-Redeploy `weekly-event-scraper`. Then trigger it once and verify Far Out West events appear (check edge function logs for "Far Out West Community" and confirm inserts).
+Add a nullable `source_url` column to `public.events` (text). Migration only — no policy changes; existing RLS covers it.
 
-## 2. Insert upcoming Far Out West events now
+Optional companion column `source_name` (text) is not needed for v1 — we'll show a generic "Source" label with an external-link icon and rely on the URL's domain being visible on hover via `title`.
 
-From their calendar page, the currently-listed upcoming events (all at Far Out West Community Garden, 43rd Avenue, PDT):
+## 2. Populate on ingest
 
-- Sat Jul 25, 2026 — Tending the Garden Day — 10:00 AM–12:00 PM
-- Sat Aug 1, 2026 — Tending the Garden Day — 10:00 AM–12:00 PM
-- Sat Aug 1, 2026 — Coffee in the Garden — 10:00–11:00 AM
-- Sat Sep 5, 2026 — Coffee in the Garden — 10:00–11:00 AM
+- **`weekly-event-scraper`** — each `ICAL_SOURCES` entry already has a `listUrl` and each parsed iCal `VEVENT` often has a `URL:` property. When inserting, set `source_url` to the per-event `URL` if present, otherwise the source's `listUrl`.
+- **`bulk-import-events`** — accept optional `source_url` field on each event and pass it through on insert.
+- **`submit-event`** — accept optional `source_url` from the submission form (not adding to the form UI in this pass unless requested; field just becomes available).
+- **`scan-event-flyer`** — leave null (no reliable source).
+- **`add-events`** — accept optional `source_url`.
 
-Insert as approved events (event_type `community`, UTC = PT + 7h during PDT). Use duplicate check on (title, event_date, location) to avoid conflict with the scraper's future runs.
+## 3. Backfill
 
-## 3. Insert Sunset Social Club kick-off
+One-time SQL update: for existing rows whose `location` or title clearly matches a known `ICAL_SOURCES` entry (e.g. "Far Out West Community Garden", "Sunset Dunes Park", "Riptide", etc.), set `source_url` to that source's `listUrl`. Rows we can't confidently attribute stay null and simply won't show a link.
 
-- Wed Jul 22, 2026 — Sunset Social Club Kick-Off Pizza Party — 6:00 PM PDT at Sunset Village, 4114 Judah St. Event type `community`, approved.
+## 4. UI
+
+- **`src/hooks/useEvents.ts`** — include `source_url` in the `Event` type and in `formatEventForCard` output.
+- **`src/components/EventCard.tsx`** — when `source_url` is present, render a small ghost-style link with `ExternalLink` icon (lucide) to the left of the "Add to My Plan" button. `target="_blank"`, `rel="noopener noreferrer"`, `title={new URL(source_url).hostname}`. Label: "Source". Hidden entirely when null so cards without provenance don't show a broken affordance.
+- Applies automatically on Index (Today / Coming Up Soon), Calendar, and My Plan since they all render `EventCard`.
+
+## 5. Public API
+
+`get-public-events` already emits a hard-coded `url: 'https://outersunset.today/calendar'` per event. Update it to prefer `event.source_url` when present, falling back to the calendar URL, so federated consumers get the true provenance too.
 
 ## Out of scope
-No UI, display, or other backend changes.
+
+- No changes to the submit form UI (no new user-facing input field).
+- No "source name" badge — icon + hostname tooltip is enough for v1.
+- No admin editor field for `source_url` (can add later if useful).
