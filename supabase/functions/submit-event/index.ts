@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, location, event_date, start_time, description, event_type, submitter_email } = await req.json();
+    const { title, location, event_date, start_time, description, event_type, submitter_email, source_url } = await req.json();
     console.log("submit-event payload:", { title, location, event_date, start_time, event_type });
 
     // Basic server-side validation
