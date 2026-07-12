@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getFlyerImageUrl, type FlyerSubmission } from "@/hooks/useFlyerSubmissions";
 import { type ContactSubmission } from "@/hooks/useContactSubmissions";
-import { CheckCircle, XCircle, Lock, Image as ImageIcon, Mail, Archive, Sparkles, Eye, Bell, Send } from "lucide-react";
+import { CheckCircle, XCircle, Lock, Image as ImageIcon, Mail, Archive, Sparkles, Eye } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FlyerImageDialog } from "@/components/FlyerImageDialog";
@@ -40,10 +40,6 @@ export default function Admin() {
   const [scannedEventData, setScannedEventData] = useState<any>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isScanning, setIsScanning] = useState<string | null>(null);
-  const [customUpdates, setCustomUpdates] = useState<Array<{ id: string; description: string; subscriber_count: number }>>([]);
-  const [selectedUpdateId, setSelectedUpdateId] = useState<string>("");
-  const [alertMessage, setAlertMessage] = useState("");
-  const [isSendingAlert, setIsSendingAlert] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -52,7 +48,6 @@ export default function Admin() {
     if (adminAuth === "true") {
       setIsAuthenticated(true);
       loadPendingEvents();
-      loadCustomUpdates();
     }
   }, []);
 
@@ -97,7 +92,7 @@ export default function Admin() {
       setPendingEvents(data.events || []);
       setFlyerSubmissions(data.flyers || []);
       setContactSubmissions(data.contacts || []);
-      loadCustomUpdates();
+      
 
       toast({
         title: "Login successful",
@@ -137,43 +132,6 @@ export default function Admin() {
     }
   };
 
-  const loadCustomUpdates = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("custom_updates")
-        .select("id, description, subscriber_count")
-        .order("created_at", { ascending: false });
-      if (!error && data) setCustomUpdates(data);
-    } catch (err) {
-      console.error("Failed to load custom updates:", err);
-    }
-  };
-
-  const handleSendAlert = async () => {
-    if (!selectedUpdateId || !alertMessage.trim()) return;
-    setIsSendingAlert(true);
-    try {
-      const storedPassword = sessionStorage.getItem("admin_password") || password;
-      const { data, error } = await supabase.functions.invoke("send-custom-alert", {
-        body: { password: storedPassword, update_id: selectedUpdateId, message: alertMessage.trim() },
-      });
-      if (error) throw error;
-      toast({
-        title: "Alert sent!",
-        description: data.summary || "Alert processed successfully.",
-      });
-      setAlertMessage("");
-      setSelectedUpdateId("");
-    } catch (err: any) {
-      toast({
-        title: "Failed to send alert",
-        description: err.message || "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSendingAlert(false);
-    }
-  };
 
   const handleAction = async (eventId: string, action: 'approve' | 'reject') => {
     setIsLoading(true);
@@ -392,7 +350,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="events" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="events">Pending Events</TabsTrigger>
             <TabsTrigger value="flyers">
               <ImageIcon className="w-4 h-4 mr-2" />
@@ -401,10 +359,6 @@ export default function Admin() {
             <TabsTrigger value="contacts">
               <Mail className="w-4 h-4 mr-2" />
               Messages ({contactSubmissions.length})
-            </TabsTrigger>
-            <TabsTrigger value="alerts">
-              <Bell className="w-4 h-4 mr-2" />
-              Send Alert
             </TabsTrigger>
           </TabsList>
 
@@ -603,59 +557,7 @@ export default function Admin() {
             )}
           </TabsContent>
 
-          <TabsContent value="alerts" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-bulletin">Send Custom Alert</CardTitle>
-                <CardDescription>
-                  Email subscribers get the message directly. SMS subscribers trigger a personal outreach email to you with click-to-text links.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="alert-update" className="text-sm font-bold">Select update</Label>
-                  {customUpdates.length === 0 ? (
-                    <p className="text-sm text-muted-foreground mt-2">No custom updates found.</p>
-                  ) : (
-                    <Select value={selectedUpdateId} onValueChange={setSelectedUpdateId}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Choose a custom update..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customUpdates.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.description} ({u.subscriber_count} subscriber{u.subscriber_count !== 1 ? "s" : ""})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
 
-                <div>
-                  <Label htmlFor="alert-message" className="text-sm font-bold">Alert message</Label>
-                  <Textarea
-                    id="alert-message"
-                    value={alertMessage}
-                    onChange={(e) => setAlertMessage(e.target.value)}
-                    placeholder="Type the alert message here. Email subscribers will see this as the email body. SMS subscribers will receive this as a pre-populated text from you."
-                    className="mt-1 min-h-[120px]"
-                    maxLength={1600}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">{alertMessage.length}/1600 characters</p>
-                </div>
-
-                <Button
-                  onClick={handleSendAlert}
-                  disabled={isSendingAlert || !selectedUpdateId || !alertMessage.trim()}
-                  className="w-full bg-sunset-orange hover:bg-sunset-orange/90 text-white"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {isSendingAlert ? "Sending..." : "Send Alert"}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
         </Tabs>
       </main>
