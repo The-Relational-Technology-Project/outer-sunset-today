@@ -54,6 +54,7 @@ serve(async (req) => {
         start_time,
         description: description ?? null,
         event_type,
+        source_url: source_url ?? null,
       })
       .select("id")
       .limit(1);
