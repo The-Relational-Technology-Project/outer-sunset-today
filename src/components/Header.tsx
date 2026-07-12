@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Bell, Calendar } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Calendar } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useMyPlan } from "@/contexts/MyPlanContext";
 
 export function Header() {
-  const navigate = useNavigate();
   const { planEvents } = useMyPlan();
 
   return (
@@ -26,31 +25,19 @@ export function Header() {
               </div>
             </div>
           </Link>
-          
-          <div className="flex items-center gap-2">
-            {/* My Plan - desktop nav */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/my-plan")}
-              className="hidden lg:inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-            >
-              <div className="relative">
-                <Calendar className="h-4 w-4" />
-                {planEvents.length > 0 && (
-                  <span className="absolute -top-1.5 -right-2 h-4 w-4 rounded-full bg-coral text-coral-foreground text-[10px] font-bold flex items-center justify-center">
-                    {planEvents.length}
-                  </span>
-                )}
-              </div>
-              <span className="ml-1">My Plan</span>
-            </Button>
 
-            {/* Get Custom Updates */}
+          <div className="flex items-center gap-2">
             <Button size="sm" asChild className="rounded-full bg-sunset-orange hover:bg-sunset-orange/90 text-white shadow-md px-4">
-              <Link to="/updates">
-                <Bell className="h-4 w-4 mr-1" />
-                Get Custom Updates
+              <Link to="/my-plan">
+                <div className="relative mr-1">
+                  <Calendar className="h-4 w-4" />
+                  {planEvents.length > 0 && (
+                    <span className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-background text-foreground text-[10px] font-bold flex items-center justify-center border border-sunset-orange">
+                      {planEvents.length}
+                    </span>
+                  )}
+                </div>
+                My Plan
               </Link>
             </Button>
           </div>
