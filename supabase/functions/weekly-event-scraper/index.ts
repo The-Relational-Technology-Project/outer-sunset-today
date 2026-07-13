@@ -188,6 +188,8 @@ async function extractEventsWithAI(
         'Layout pattern: a day-of-month number (e.g. "17") on one line, then "Jun" on the next, then later "Wed, 17 Jun" followed by a time range and a "### Event Title". Pair each title with the nearest preceding date/time block. Capture ALL events in range, even if multiple events share the same date. Default location is "Black Bird Bookstore".',
       'Sunset Commons':
         'This is an Eventbrite organizer page. Dates appear as "Today • 7:00 PM", "Tomorrow • ...", or "Sat, Jun 14 • ...". Resolve "Today" to the SCRAPE DATE below and "Tomorrow" to scrape date + 1 day. Default location is "Sunset Commons, 1600 Irving St". A "Sales Ended" badge does NOT mean the event is over — only skip if the event_date itself is outside the date range.',
+      'Outer Sunset Farmers Market':
+        'The Outer Sunset Farmers Market & Mercantile happens ONLY on SUNDAYS, 10:00–15:00 Pacific Time, at 37th Avenue between Ortega and Quintara. When emitting the recurring event for a week, the event_date MUST be a Sunday, start_time MUST be 10:00, end_time 15:00. Never emit it on any other day of the week. Emit exactly ONE entry per Sunday in range; drop any trademark symbols (™) from the title so it reads "Outer Sunset Farmers Market & Mercantile".',
     };
     const hint = sourceHints[sourceName] || '';
 
