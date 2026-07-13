@@ -213,6 +213,7 @@ IMPORTANT:
 - Skip any events outside the date range
 - Skip duplicates within this source
 - Use 24-hour time format (e.g., 14:00 not 2pm)
+- For recurring events described by weekday (e.g. "every Sunday", "Wednesdays 6pm"), the event_date you emit MUST fall on that exact weekday. Double-check the day-of-week of event_date before returning it — never place a "Sunday" event on a Monday.
 - Be exhaustive: do not summarize. Return every distinct event in range, even small ones.
 
 Return ONLY valid JSON array (no markdown, no explanation):
