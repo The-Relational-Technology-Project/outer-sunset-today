@@ -279,12 +279,21 @@ async function extractPizzaMenusWithAI(pizzaContent: string, weekStart: string, 
     const startDate = new Date(weekStart);
     const endDate = new Date(weekEnd);
     
-    // Dynamically determine month/year from the week start date
+    // Dynamically determine month/year from the week start AND end date —
+    // a week can span two calendar months (e.g. Jul 26 – Aug 2), in which case
+    // the scraped content contains two calendar tables.
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const wsDate = new Date(weekStart + 'T00:00:00');
+    const weDate = new Date(weekEnd + 'T00:00:00');
     const monthName = monthNames[wsDate.getMonth()];
     const year = wsDate.getFullYear();
-    
+    const endMonthName = monthNames[weDate.getMonth()];
+    const endYear = weDate.getFullYear();
+    const spansMonths = monthName !== endMonthName;
+    const monthLabel = spansMonths
+      ? `${monthName} ${year} and ${endMonthName} ${endYear}`
+      : `${monthName} ${year}`;
+
     const prompt = `Extract Arizmendi Bakery pizza menu for the week of ${weekStart} to ${weekEnd}.
 
 The content below shows a calendar table. Each cell contains a date number followed by pizza toppings.
@@ -293,8 +302,9 @@ Format: "DAY_NUMBER<br>pizza toppings" (e.g., "27<br>roasted yellow potatoes wit
 RULES:
 1. Arizmendi is CLOSED on Mondays only - skip Monday
 2. Extract pizzas for Tuesday through Sunday
-3. Dates are in ${monthName} ${year} (or the month shown in the calendar header)
+3. Dates are in ${monthLabel}. ${spansMonths ? `IMPORTANT: this week crosses a month boundary — the content contains TWO calendar tables (one per month, each with its own "Month Year" header). Use the header above each table to assign the correct month/year to its day numbers, and include days from BOTH months that fall in the date range.` : 'Use the month shown in the calendar header.'}
 4. You should find approximately 6 pizzas (Tue-Sun) within the date range
+
 
 For EACH pizza day within ${weekStart} to ${weekEnd}, create an entry:
 {
