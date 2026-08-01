@@ -710,18 +710,34 @@ serve(async (req) => {
     // Run PRIMARY sources in parallel first (critical sources)
     console.log('--- Scraping Primary Sources ---');
     
-    // Pizza scrape with retry — single critical URL, cheap to retry
+    // Pizza scrape with retry — single critical URL, cheap to retry.
+    // When the week spans two calendar months (e.g. Jul 26 – Aug 2), the
+    // Arizmendi calendar only renders one month at a time, so scrape both
+    // months explicitly and concatenate.
     const scrapePizzaWithRetry = async () => {
-      let results = await scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html', 'markdown']);
-      const first = results[0];
-      const tooShort = !first?.content || first.content.length < 500;
+      const startMonth = weekStart.slice(0, 7);
+      const endMonth = weekEnd.slice(0, 7);
+      const base = PIZZA_SOURCES[0];
+      const sources = startMonth === endMonth
+        ? [{ ...base, url: `${base.url}?month=${startMonth}` }]
+        : [
+            { ...base, name: `${base.name} (${startMonth})`, url: `${base.url}?month=${startMonth}` },
+            { ...base, name: `${base.name} (${endMonth})`, url: `${base.url}?month=${endMonth}` },
+          ];
+
+      const scrapeAll = () => scrapeBatch(sources, firecrawlApiKey, 10000, ['html', 'markdown']);
+      let results = await scrapeAll();
+      const tooShort = results.every(r => !r?.content || r.content.length < 500);
       if (tooShort) {
-        console.warn(`PIZZA_SCRAPE_RETRY: first attempt returned ${first?.content?.length ?? 0} chars, retrying in 3s...`);
+        console.warn(`PIZZA_SCRAPE_RETRY: first attempt returned too little content, retrying in 3s...`);
         await new Promise((r) => setTimeout(r, 3000));
-        results = await scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html', 'markdown']);
+        results = await scrapeAll();
       }
-      return results;
+      // Merge all month pages into a single logical pizza source
+      const merged = results.filter(r => r?.content).map(r => r.content).join('\n\n');
+      return [{ name: base.name, content: merged }];
     };
+
 
     const [primaryEventResults, pizzaResults, searchResults, icalResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
