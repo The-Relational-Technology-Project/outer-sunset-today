@@ -279,12 +279,21 @@ async function extractPizzaMenusWithAI(pizzaContent: string, weekStart: string, 
     const startDate = new Date(weekStart);
     const endDate = new Date(weekEnd);
     
-    // Dynamically determine month/year from the week start date
+    // Dynamically determine month/year from the week start AND end date —
+    // a week can span two calendar months (e.g. Jul 26 – Aug 2), in which case
+    // the scraped content contains two calendar tables.
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const wsDate = new Date(weekStart + 'T00:00:00');
+    const weDate = new Date(weekEnd + 'T00:00:00');
     const monthName = monthNames[wsDate.getMonth()];
     const year = wsDate.getFullYear();
-    
+    const endMonthName = monthNames[weDate.getMonth()];
+    const endYear = weDate.getFullYear();
+    const spansMonths = monthName !== endMonthName;
+    const monthLabel = spansMonths
+      ? `${monthName} ${year} and ${endMonthName} ${endYear}`
+      : `${monthName} ${year}`;
+
     const prompt = `Extract Arizmendi Bakery pizza menu for the week of ${weekStart} to ${weekEnd}.
 
 The content below shows a calendar table. Each cell contains a date number followed by pizza toppings.
@@ -293,8 +302,9 @@ Format: "DAY_NUMBER<br>pizza toppings" (e.g., "27<br>roasted yellow potatoes wit
 RULES:
 1. Arizmendi is CLOSED on Mondays only - skip Monday
 2. Extract pizzas for Tuesday through Sunday
-3. Dates are in ${monthName} ${year} (or the month shown in the calendar header)
+3. Dates are in ${monthLabel}. ${spansMonths ? `IMPORTANT: this week crosses a month boundary — the content contains TWO calendar tables (one per month, each with its own "Month Year" header). Use the header above each table to assign the correct month/year to its day numbers, and include days from BOTH months that fall in the date range.` : 'Use the month shown in the calendar header.'}
 4. You should find approximately 6 pizzas (Tue-Sun) within the date range
+
 
 For EACH pizza day within ${weekStart} to ${weekEnd}, create an entry:
 {
@@ -710,18 +720,34 @@ serve(async (req) => {
     // Run PRIMARY sources in parallel first (critical sources)
     console.log('--- Scraping Primary Sources ---');
     
-    // Pizza scrape with retry — single critical URL, cheap to retry
+    // Pizza scrape with retry — single critical URL, cheap to retry.
+    // When the week spans two calendar months (e.g. Jul 26 – Aug 2), the
+    // Arizmendi calendar only renders one month at a time, so scrape both
+    // months explicitly and concatenate.
     const scrapePizzaWithRetry = async () => {
-      let results = await scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html', 'markdown']);
-      const first = results[0];
-      const tooShort = !first?.content || first.content.length < 500;
+      const startMonth = weekStart.slice(0, 7);
+      const endMonth = weekEnd.slice(0, 7);
+      const base = PIZZA_SOURCES[0];
+      const sources = startMonth === endMonth
+        ? [{ ...base, url: `${base.url}?month=${startMonth}` }]
+        : [
+            { ...base, name: `${base.name} (${startMonth})`, url: `${base.url}?month=${startMonth}` },
+            { ...base, name: `${base.name} (${endMonth})`, url: `${base.url}?month=${endMonth}` },
+          ];
+
+      const scrapeAll = () => scrapeBatch(sources, firecrawlApiKey, 10000, ['html', 'markdown']);
+      let results = await scrapeAll();
+      const tooShort = results.every(r => !r?.content || r.content.length < 500);
       if (tooShort) {
-        console.warn(`PIZZA_SCRAPE_RETRY: first attempt returned ${first?.content?.length ?? 0} chars, retrying in 3s...`);
+        console.warn(`PIZZA_SCRAPE_RETRY: first attempt returned too little content, retrying in 3s...`);
         await new Promise((r) => setTimeout(r, 3000));
-        results = await scrapeBatch(PIZZA_SOURCES, firecrawlApiKey, 10000, ['html', 'markdown']);
+        results = await scrapeAll();
       }
-      return results;
+      // Merge all month pages into a single logical pizza source
+      const merged = results.filter(r => r?.content).map(r => r.content).join('\n\n');
+      return [{ name: base.name, content: merged }];
     };
+
 
     const [primaryEventResults, pizzaResults, searchResults, icalResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
