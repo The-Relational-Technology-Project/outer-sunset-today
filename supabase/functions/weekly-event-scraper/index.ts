@@ -54,6 +54,7 @@ const SECONDARY_EVENT_PAGES = [
   { name: "4-Star Theater Popcorn Palace", url: "https://4-star-movies.com/popcorn-palace" },
   { name: "Dance Garden SF", url: "https://www.dancegardensf.com/" },
   { name: "SF Nature Education", url: "https://www.sfnature.org/" },
+  { name: "VolunTracker Volunteer Shifts", url: "https://voluntracker-embed-seven.vercel.app/" },
 ];
 
 const PIZZA_SOURCES = [
@@ -190,6 +191,8 @@ async function extractEventsWithAI(
         'This is an Eventbrite organizer page. Dates appear as "Today • 7:00 PM", "Tomorrow • ...", or "Sat, Jun 14 • ...". Resolve "Today" to the SCRAPE DATE below and "Tomorrow" to scrape date + 1 day. Default location is "Sunset Commons, 1600 Irving St". A "Sales Ended" badge does NOT mean the event is over — only skip if the event_date itself is outside the date range.',
       'Outer Sunset Farmers Market':
         'The Outer Sunset Farmers Market & Mercantile happens ONLY on SUNDAYS, 10:00–15:00 Pacific Time, at 37th Avenue between Ortega and Quintara. When emitting the recurring event for a week, the event_date MUST be a Sunday, start_time MUST be 10:00, end_time 15:00. Never emit it on any other day of the week. Emit exactly ONE entry per Sunday in range; drop any trademark symbols (™) from the title so it reads "Outer Sunset Farmers Market & Mercantile".',
+      'VolunTracker Volunteer Shifts':
+        'This is a citywide volunteer-shift aggregator table with columns TIME / EVENT / ORGANIZATION / AREA / CATEGORY, grouped under date headings like "August 12". ONLY return rows whose AREA is one of: Outer Sunset, Inner Sunset, Outer Richmond, Ocean Beach, Sunset Dunes, Noriega Sunset Lounge. Discard every other area (Tenderloin, SoMa, Mission, Parkside, Golden Gate Park, Inner Richmond, etc.). Title format: "<EVENT> — <ORGANIZATION>" (skip the dash if the org name is already in the event name). Use the AREA as the location, event_type "volunteer", and a short description naming the organization.',
     };
     const hint = sourceHints[sourceName] || '';
 
