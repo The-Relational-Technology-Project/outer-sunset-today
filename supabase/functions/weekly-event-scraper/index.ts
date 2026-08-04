@@ -834,7 +834,10 @@ serve(async (req) => {
       Promise.all(perSourceContent.map(async (s) => {
         const trimmed = s.content.length > PER_SOURCE_CAP ? s.content.slice(0, PER_SOURCE_CAP) : s.content;
         const events = await extractEventsWithAI(trimmed, weekStart, weekEnd, s.name, s.url);
-        return { name: s.name, events };
+        // Stamp provenance: AI extraction doesn't return URLs, so attribute each
+        // event to the source page it was scraped from.
+        const stamped = events.map((e: any) => ({ ...e, source_url: e.source_url || s.url || undefined }));
+        return { name: s.name, events: stamped };
       })),
       pizzaContent ? extractPizzaMenusWithAI(pizzaContent, weekStart, weekEnd) : Promise.resolve([]),
     ]);
