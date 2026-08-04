@@ -54,6 +54,7 @@ const SECONDARY_EVENT_PAGES = [
   { name: "4-Star Theater Popcorn Palace", url: "https://4-star-movies.com/popcorn-palace" },
   { name: "Dance Garden SF", url: "https://www.dancegardensf.com/" },
   { name: "SF Nature Education", url: "https://www.sfnature.org/" },
+  { name: "VolunTracker Volunteer Shifts", url: "https://voluntracker-embed-seven.vercel.app/" },
 ];
 
 const PIZZA_SOURCES = [
