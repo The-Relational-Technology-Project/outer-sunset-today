@@ -67,9 +67,10 @@ export const InfoStrip = () => {
             <Skeleton className="h-4 w-40" />
           ) : (
             <span className="text-xs text-muted-foreground font-handwritten truncate">
-              School Lunch{lunch && !lunch.isToday ? ` (${weekdayLabel(lunch.menu_date)})` : ''}:{' '}
+              School Lunch{lunch ? ` (${weekdayLabel(lunch.menu_date)})` : ''}:{' '}
               {lunch?.special_item || "No lunch listed"}
             </span>
+
           )}
         </div>
 
