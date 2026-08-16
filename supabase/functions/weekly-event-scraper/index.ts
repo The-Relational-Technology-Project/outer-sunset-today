@@ -679,25 +679,13 @@ async function fetchIcalSource(
 }
 
 // --- Run-wide dedupe ----------------------------------------------------------
-// Matches our import dedupe key (title + date + location), case/whitespace
-// insensitive, plus location normalization mirrored from bulk-import-events.
-function normalizeLocationForKey(loc: string): string {
-  const l = (loc || '').toLowerCase();
-  if (l.includes('sealevel')) return 'sealevel';
-  return l.trim().replace(/\s+/g, ' ');
-}
+// Uses the shared fuzzy matcher (canonical venue + date + start-time window +
+// normalized title overlap) so the same event coming from an iCal feed, a
+// scraped venue page and a search result collapses into one listing.
 function dedupeEvents(events: any[]): { unique: any[]; dropped: number } {
-  const seen = new Set<string>();
-  const unique: any[] = [];
-  let dropped = 0;
-  for (const e of events) {
-    const key = `${(e.title || '').toLowerCase().trim()}|${e.event_date}|${normalizeLocationForKey(e.location || '')}`;
-    if (seen.has(key)) { dropped++; continue; }
-    seen.add(key);
-    unique.push(e);
-  }
-  return { unique, dropped };
+  return dedupeEventList(events);
 }
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
