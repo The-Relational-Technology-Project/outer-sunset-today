@@ -46,8 +46,8 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Insert event with pending status (default)
     // If this event is already on the calendar, don't create a second copy.
+
     const { data: sameDay } = await supabase
       .from("events")
       .select("id, title, location, event_date, start_time, end_time, description, source_url")
