@@ -9,9 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getFlyerImageUrl, type FlyerSubmission } from "@/hooks/useFlyerSubmissions";
 import { type ContactSubmission } from "@/hooks/useContactSubmissions";
-import { CheckCircle, XCircle, Lock, Image as ImageIcon, Mail, Archive, Sparkles, Eye } from "lucide-react";
+import { CheckCircle, XCircle, Lock, Image as ImageIcon, Mail, Archive, Sparkles, Eye, Copy } from "lucide-react";
 import { FlyerImageDialog } from "@/components/FlyerImageDialog";
 import { EventConfirmationDialog } from "@/components/EventConfirmationDialog";
+import { DuplicateReview } from "@/components/admin/DuplicateReview";
+
 
 interface PendingEvent {
   id: string;
@@ -348,8 +350,12 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="events" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events">Pending Events</TabsTrigger>
+            <TabsTrigger value="duplicates">
+              <Copy className="w-4 h-4 mr-2" />
+              Duplicates
+            </TabsTrigger>
             <TabsTrigger value="flyers">
               <ImageIcon className="w-4 h-4 mr-2" />
               Flyers ({flyerSubmissions.length})
@@ -359,6 +365,11 @@ export default function Admin() {
               Messages ({contactSubmissions.length})
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="duplicates" className="mt-6">
+            <DuplicateReview />
+          </TabsContent>
+
 
           <TabsContent value="events" className="mt-6">
             {isLoading && pendingEvents.length === 0 ? (
