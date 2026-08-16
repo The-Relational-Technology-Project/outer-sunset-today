@@ -2,7 +2,8 @@ import { Card } from "@/components/ui/card";
 import { useWeather } from "@/hooks/useWeather";
 import { useBestBlueDay } from "@/hooks/useBestBlueDay";
 import { useTodaysMenus } from "@/hooks/useDailyMenus";
-import { Cloud, CloudRain, Sun, CloudSnow, Wind, Waves, Pizza, ExternalLink } from "lucide-react";
+import { useSchoolLunch } from "@/hooks/useSchoolLunch";
+import { Cloud, CloudRain, Sun, CloudSnow, Wind, Pizza, Utensils, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const getWeatherIcon = (forecast: string) => {
@@ -14,14 +15,19 @@ const getWeatherIcon = (forecast: string) => {
   return <Sun className="h-4 w-4 text-primary" />;
 };
 
+const weekdayLabel = (dateStr: string) =>
+  new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short' });
+
 export const InfoStrip = () => {
   const { data: weather, isLoading: isLoadingWeather } = useWeather();
   const { data: isBestBlueDay } = useBestBlueDay();
   const { data: menus, isLoading: isLoadingMenus } = useTodaysMenus();
+  const { data: lunch, isLoading: isLoadingLunch } = useSchoolLunch();
 
   const arizmendi = menus?.find(menu =>
     menu.restaurant.toLowerCase().includes('arizmendi')
   );
+
 
   return (
     <Card className="bg-paper border-cork shadow-bulletin">
