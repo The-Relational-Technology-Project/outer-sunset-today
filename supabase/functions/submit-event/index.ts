@@ -47,8 +47,34 @@ serve(async (req) => {
     });
 
     // Insert event with pending status (default)
+    // If this event is already on the calendar, don't create a second copy.
+    const { data: sameDay } = await supabase
+      .from("events")
+      .select("id, title, location, event_date, start_time, end_time, description, source_url")
+      .eq("event_date", event_date)
+      .eq("archived", false);
+
+    const candidate = { title, location, event_date, start_time };
+    const alreadyListed = (sameDay || []).find((row) =>
+      venueKey(row.location) === venueKey(location) && isLikelyDuplicate(row, candidate)
+    );
+
+    if (alreadyListed) {
+      const patch = backfillFields(alreadyListed, { source_url: source_url ?? null, description: description ?? null });
+      if (Object.keys(patch).length > 0) {
+        await supabase.from("events").update(patch).eq("id", alreadyListed.id);
+      }
+      console.log(`submit-event: duplicate of existing "${alreadyListed.title}" — not inserting`);
+      return new Response(JSON.stringify({ success: true, duplicate: true, eventId: alreadyListed.id }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Insert event with pending status (default)
     const { data: eventRows, error: eventError } = await supabase
       .from("events")
+
       .insert({
         title,
         location,
