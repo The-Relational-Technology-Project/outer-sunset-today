@@ -60,45 +60,31 @@ export const InfoStrip = () => {
           ) : null}
         </div>
 
-        {/* Tides */}
+        {/* School Lunch */}
         <div className="flex items-center gap-2 px-4 py-3 min-w-0">
-          {isLoadingWeather ? (
+          <Utensils className="h-4 w-4 text-primary flex-shrink-0" />
+          {isLoadingLunch ? (
             <Skeleton className="h-4 w-40" />
-          ) : weather?.tides && weather.tides.length > 0 ? (
-            <>
-              <Waves className="h-4 w-4 text-primary flex-shrink-0" />
-              <span className="text-xs text-muted-foreground font-handwritten truncate">
-                {weather.tides.map((tide, i) => (
-                  <span key={i}>
-                    {i > 0 && ' · '}
-                    {tide.type === 'H' ? 'High' : 'Low'} {tide.time} ({tide.height}ft)
-                  </span>
-                ))}
-              </span>
-            </>
           ) : (
-            <>
-              <Waves className="h-4 w-4 text-primary flex-shrink-0" />
-              <span className="text-xs text-muted-foreground font-handwritten italic">
-                Tides unavailable
-              </span>
-            </>
+            <span className="text-xs text-muted-foreground font-handwritten truncate">
+              School Lunch{lunch && !lunch.isToday ? ` (${weekdayLabel(lunch.menu_date)})` : ''}:{' '}
+              {lunch?.special_item || "No lunch listed"}
+            </span>
           )}
         </div>
 
         {/* Arizmendi */}
         <div className="flex items-center gap-2 px-4 py-3 min-w-0">
+          <Pizza className="h-4 w-4 text-primary flex-shrink-0" />
           {isLoadingMenus ? (
             <Skeleton className="h-4 w-28" />
           ) : (
-            <>
-              <Pizza className="h-4 w-4 text-primary flex-shrink-0" />
-              <span className="text-xs text-muted-foreground font-handwritten truncate">
-                {arizmendi?.special_item || "No pizza today"}
-              </span>
-            </>
+            <span className="text-xs text-muted-foreground font-handwritten truncate">
+              Arizmendi: {arizmendi?.special_item || "No pizza today"}
+            </span>
           )}
         </div>
+
       </div>
     </Card>
   );
