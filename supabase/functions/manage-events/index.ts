@@ -15,7 +15,8 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { action, eventId, password, flyerId, updates } = requestBody;
+    const { action, eventId, password, flyerId, updates, keepId, removeId } = requestBody;
+
     
     // Verify admin password
     const adminPassword = Deno.env.get('ADMIN_PASSWORD');
