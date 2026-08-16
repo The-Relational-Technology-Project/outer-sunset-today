@@ -202,7 +202,12 @@ serve(async (req) => {
         await supabase.from('events').update(patch).eq('id', keepId);
       }
 
+      // Clear FK references before deleting the duplicate row.
+      await supabase.from('event_submissions').delete().eq('event_id', removeId);
+      await supabase.from('flyer_submissions').update({ event_id: null }).eq('event_id', removeId);
+
       const { error: deleteError } = await supabase.from('events').delete().eq('id', removeId);
+
       if (deleteError) throw deleteError;
 
       console.log(`Merged event ${removeId} into ${keepId}`, patch);
