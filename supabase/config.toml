@@ -45,3 +45,7 @@ verify_jwt = false
 [functions.check-news]
 verify_jwt = false
 
+[functions.check-school-lunch]
+verify_jwt = false
+
+
