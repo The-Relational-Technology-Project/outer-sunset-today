@@ -2,7 +2,8 @@ import { Card } from "@/components/ui/card";
 import { useWeather } from "@/hooks/useWeather";
 import { useBestBlueDay } from "@/hooks/useBestBlueDay";
 import { useTodaysMenus } from "@/hooks/useDailyMenus";
-import { Cloud, CloudRain, Sun, CloudSnow, Wind, Waves, Pizza, ExternalLink } from "lucide-react";
+import { useSchoolLunch } from "@/hooks/useSchoolLunch";
+import { Cloud, CloudRain, Sun, CloudSnow, Wind, Pizza, Utensils, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const getWeatherIcon = (forecast: string) => {
@@ -14,14 +15,19 @@ const getWeatherIcon = (forecast: string) => {
   return <Sun className="h-4 w-4 text-primary" />;
 };
 
+const weekdayLabel = (dateStr: string) =>
+  new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short' });
+
 export const InfoStrip = () => {
   const { data: weather, isLoading: isLoadingWeather } = useWeather();
   const { data: isBestBlueDay } = useBestBlueDay();
   const { data: menus, isLoading: isLoadingMenus } = useTodaysMenus();
+  const { data: lunch, isLoading: isLoadingLunch } = useSchoolLunch();
 
   const arizmendi = menus?.find(menu =>
     menu.restaurant.toLowerCase().includes('arizmendi')
   );
+
 
   return (
     <Card className="bg-paper border-cork shadow-bulletin">
@@ -54,45 +60,31 @@ export const InfoStrip = () => {
           ) : null}
         </div>
 
-        {/* Tides */}
+        {/* School Lunch */}
         <div className="flex items-center gap-2 px-4 py-3 min-w-0">
-          {isLoadingWeather ? (
+          <Utensils className="h-4 w-4 text-primary flex-shrink-0" />
+          {isLoadingLunch ? (
             <Skeleton className="h-4 w-40" />
-          ) : weather?.tides && weather.tides.length > 0 ? (
-            <>
-              <Waves className="h-4 w-4 text-primary flex-shrink-0" />
-              <span className="text-xs text-muted-foreground font-handwritten truncate">
-                {weather.tides.map((tide, i) => (
-                  <span key={i}>
-                    {i > 0 && ' · '}
-                    {tide.type === 'H' ? 'High' : 'Low'} {tide.time} ({tide.height}ft)
-                  </span>
-                ))}
-              </span>
-            </>
           ) : (
-            <>
-              <Waves className="h-4 w-4 text-primary flex-shrink-0" />
-              <span className="text-xs text-muted-foreground font-handwritten italic">
-                Tides unavailable
-              </span>
-            </>
+            <span className="text-xs text-muted-foreground font-handwritten truncate">
+              School Lunch{lunch && !lunch.isToday ? ` (${weekdayLabel(lunch.menu_date)})` : ''}:{' '}
+              {lunch?.special_item || "No lunch listed"}
+            </span>
           )}
         </div>
 
         {/* Arizmendi */}
         <div className="flex items-center gap-2 px-4 py-3 min-w-0">
+          <Pizza className="h-4 w-4 text-primary flex-shrink-0" />
           {isLoadingMenus ? (
             <Skeleton className="h-4 w-28" />
           ) : (
-            <>
-              <Pizza className="h-4 w-4 text-primary flex-shrink-0" />
-              <span className="text-xs text-muted-foreground font-handwritten truncate">
-                {arizmendi?.special_item || "No pizza today"}
-              </span>
-            </>
+            <span className="text-xs text-muted-foreground font-handwritten truncate">
+              Arizmendi: {arizmendi?.special_item || "No pizza today"}
+            </span>
           )}
         </div>
+
       </div>
     </Card>
   );
