@@ -144,7 +144,71 @@ serve(async (req) => {
 
       console.log(`Event ${eventId} updated successfully:`, updates);
       result = { event: data };
+    } else if (action === 'find-duplicates') {
+      // Scan upcoming, non-archived events for likely duplicate pairs.
+      const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(new Date());
+
+      const { data: events, error } = await supabase
+        .from('events')
+        .select('id, title, location, event_date, start_time, end_time, description, source_url, event_type, status, created_at')
+        .gte('event_date', today)
+        .eq('archived', false)
+        .order('event_date', { ascending: true });
+
+      if (error) throw error;
+
+      const pairs: any[] = [];
+      const list = events || [];
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i];
+          const b = list[j];
+          if (a.event_date !== b.event_date) continue;
+          if (!isLikelyDuplicate(a, b)) continue;
+          pairs.push({
+            venue: canonicalVenue(a.location),
+            similarity: Math.round(titleSimilarity(a.title, b.title, a.location, b.location) * 100),
+            a,
+            b,
+          });
+        }
+      }
+
+      console.log(`find-duplicates: ${pairs.length} suspected pair(s) across ${list.length} upcoming events`);
+      result = { pairs, scanned: list.length };
+    } else if (action === 'merge-duplicates') {
+      if (!keepId || !removeId) {
+        return new Response(
+          JSON.stringify({ error: 'keepId and removeId required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: rows, error: fetchError } = await supabase
+        .from('events')
+        .select('*')
+        .in('id', [keepId, removeId]);
+
+      if (fetchError) throw fetchError;
+
+      const keep = rows?.find((r) => r.id === keepId);
+      const remove = rows?.find((r) => r.id === removeId);
+      if (!keep || !remove) throw new Error('Both events must exist');
+
+      const patch = backfillFields(keep, remove);
+      if (Object.keys(patch).length > 0) {
+        await supabase.from('events').update(patch).eq('id', keepId);
+      }
+
+      const { error: deleteError } = await supabase.from('events').delete().eq('id', removeId);
+      if (deleteError) throw deleteError;
+
+      console.log(`Merged event ${removeId} into ${keepId}`, patch);
+      result = { merged: true, keepId, removeId, patch };
     } else {
+
       return new Response(
         JSON.stringify({ error: 'Invalid action' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
