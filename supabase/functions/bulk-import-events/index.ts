@@ -116,21 +116,40 @@ serve(async (req) => {
         // Normalize location name
         const normalizedLocation = normalizeLocation(event.location);
 
-        // Check for duplicates (same title + date + location)
-        const { data: existing } = await supabase
+        // Fuzzy duplicate check: same date + same canonical venue + close start
+        // time + strongly overlapping title. Exact string matching missed
+        // wording/venue drift between sources.
+        const { data: sameDay } = await supabase
           .from('events')
-          .select('id')
-          .eq('title', event.title)
+          .select('id, title, location, event_date, start_time, end_time, description, source_url')
           .eq('event_date', event.event_date)
-          .eq('location', normalizedLocation)
-          .maybeSingle();
+          .eq('archived', false);
+
+        const candidate = {
+          title: event.title,
+          location: normalizedLocation,
+          event_date: event.event_date,
+          start_time: event.start_time,
+        };
+        const existing = (sameDay || []).find((row) =>
+          venueKey(row.location) === venueKey(normalizedLocation) && isLikelyDuplicate(row, candidate)
+        );
 
         if (existing) {
+          // Keep the existing row, but fill in anything it's missing.
+          const patch = backfillFields(existing, {
+            source_url: event.source_url || null,
+            description: event.description || null,
+          });
+          if (Object.keys(patch).length > 0) {
+            await supabase.from('events').update(patch).eq('id', existing.id);
+          }
           results.events.skipped++;
-          results.events.details.push({ title: event.title, status: 'skipped', reason: 'duplicate' });
-          console.log(`Skipped duplicate event: ${event.title} on ${event.event_date}`);
+          results.events.details.push({ title: event.title, status: 'skipped', reason: `duplicate of "${existing.title}"` });
+          console.log(`Skipped duplicate event: ${event.title} on ${event.event_date} (matches "${existing.title}")`);
           continue;
         }
+
 
         // Parse times and create timestamps
         const eventDate = event.event_date;
