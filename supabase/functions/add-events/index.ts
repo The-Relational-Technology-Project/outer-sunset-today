@@ -56,20 +56,37 @@ serve(async (req) => {
 
     for (const event of events as EventInput[]) {
       try {
-        // Check for duplicates
-        const { data: existing } = await supabase
+        // Fuzzy duplicate check (same date + canonical venue + close time + similar title)
+        const { data: sameDay } = await supabase
           .from('events')
-          .select('id')
-          .eq('title', event.title)
+          .select('id, title, location, event_date, start_time, end_time, description, source_url')
           .eq('event_date', event.event_date)
-          .eq('location', event.location)
-          .maybeSingle();
+          .eq('archived', false);
+
+        const candidate = {
+          title: event.title,
+          location: event.location,
+          event_date: event.event_date,
+          start_time: event.start_time,
+        };
+        const existing = (sameDay || []).find((row) =>
+          venueKey(row.location) === venueKey(event.location) && isLikelyDuplicate(row, candidate)
+        );
 
         if (existing) {
+          const patch = backfillFields(existing, {
+            source_url: (event as any).source_url || null,
+            description: event.description || null,
+          });
+          if (Object.keys(patch).length > 0) {
+            await supabase.from('events').update(patch).eq('id', existing.id);
+          }
           results.skipped++;
-          console.log(`Skipped duplicate: ${event.title} on ${event.event_date}`);
+          console.log(`Skipped duplicate: ${event.title} on ${event.event_date} (matches "${existing.title}")`);
           continue;
         }
+
+
 
         // Parse times
         const offset = pacificOffset(event.event_date);
