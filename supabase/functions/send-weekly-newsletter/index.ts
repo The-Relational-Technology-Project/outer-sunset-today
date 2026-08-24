@@ -81,80 +81,106 @@ serve(async (req) => {
 
     console.log(`Found ${events?.length || 0} events and ${menus?.length || 0} menu items`);
 
-    // Group events by day
-    const eventsByDay: { [key: string]: any[] } = {};
-    events?.forEach((event) => {
-      const date = new Date(event.event_date);
-      const dayKey = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-      if (!eventsByDay[dayKey]) {
-        eventsByDay[dayKey] = [];
-      }
-      eventsByDay[dayKey].push(event);
-    });
+    const dayLabel = (dateStr: string) => {
+      const d = new Date(`${dateStr}T12:00:00-07:00`);
+      return d.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'numeric',
+        day: 'numeric',
+        timeZone: 'America/Los_Angeles',
+      });
+    };
 
-    // Group menus by day
-    const menusByDay: { [key: string]: any[] } = {};
-    menus?.forEach((menu) => {
-      const date = new Date(menu.menu_date);
-      const dayKey = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-      if (!menusByDay[dayKey]) {
-        menusByDay[dayKey] = [];
-      }
-      menusByDay[dayKey].push(menu);
-    });
+    const esc = (s: string) =>
+      String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-    // Build email HTML
+    const fmtTime = (iso: string) => {
+      const t = new Date(iso).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'America/Los_Angeles',
+      });
+      return t.replace(':00', '').replace(' AM', 'am').replace(' PM', 'pm');
+    };
+
+    // Group by ISO date so ordering stays stable
+    const groupByDate = <T extends Record<string, any>>(rows: T[] | null, key: string) => {
+      const out: Record<string, T[]> = {};
+      (rows ?? []).forEach((r) => {
+        const k = r[key];
+        (out[k] ||= []).push(r);
+      });
+      return out;
+    };
+
+    const eventsByDate = groupByDate(events, 'event_date');
+    const menusByDate = groupByDate(menus, 'menu_date');
+
+    const link = "color:#c2410c;text-decoration:none;";
+
+    // Compact events list: one line per event, title links to its source
     const buildEventsHTML = () => {
-      if (!events || events.length === 0) {
-        return '<p style="color: #718096;">No events scheduled this week. Check back soon!</p>';
+      const dates = Object.keys(eventsByDate).sort();
+      if (dates.length === 0) {
+        return '<p style="color:#6b7280;margin:0;">No events on the calendar this week yet.</p>';
       }
-
-      let html = '';
-      for (const [day, dayEvents] of Object.entries(eventsByDay)) {
-        html += `<h3 style="color: #2c5282; margin-top: 20px; margin-bottom: 10px;">${day}</h3>`;
-        dayEvents.forEach((event: any) => {
-          // Format time in Pacific Time
-          const time = new Date(event.start_time).toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit',
-            hour12: true,
-            timeZone: 'America/Los_Angeles'
-          });
-          html += `
-            <div style="margin-bottom: 15px; padding: 10px; background-color: #f7fafc; border-left: 3px solid #4299e1;">
-              <strong style="color: #2d3748;">${event.title}</strong><br/>
-              <span style="color: #4a5568;">⏰ ${time} • 📍 ${event.location}</span><br/>
-              ${event.description ? `<span style="color: #718096; font-size: 14px;">${event.description}</span>` : ''}
-            </div>
-          `;
-        });
-      }
-      return html;
+      return dates
+        .map((date) => {
+          const lines = eventsByDate[date]
+            .map((e: any) => {
+              const title = e.source_url
+                ? `<a href="${esc(e.source_url)}" style="${link}">${esc(e.title)}</a>`
+                : esc(e.title);
+              return `<li style="margin:0 0 4px;">${fmtTime(e.start_time)} — ${title} <span style="color:#6b7280;">· ${esc(e.location)}</span></li>`;
+            })
+            .join('');
+          return `<p style="margin:14px 0 4px;font-weight:700;color:#111827;">${dayLabel(date)}</p>
+            <ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.45;color:#374151;">${lines}</ul>`;
+        })
+        .join('');
     };
 
-    const buildMenusHTML = () => {
-      if (!menus || menus.length === 0) {
-        return '<p style="color: #718096;">No special menu items this week.</p>';
-      }
-
-      let html = '';
-      for (const [day, dayMenus] of Object.entries(menusByDay)) {
-        html += `<h3 style="color: #2c5282; margin-top: 20px; margin-bottom: 10px;">${day}</h3>`;
-        dayMenus.forEach((menu: any) => {
-          html += `
-            <div style="margin-bottom: 15px; padding: 10px; background-color: #fffaf0; border-left: 3px solid #ed8936;">
-              <strong style="color: #2d3748;">${menu.restaurant}</strong> - ${menu.location}<br/>
-              <span style="color: #4a5568;">🍽️ ${menu.special_item}</span>
-              ${menu.price ? ` • <span style="color: #718096;">${menu.price}</span>` : ''}<br/>
-              <span style="color: #718096; font-size: 14px;">Hours: ${menu.hours}</span>
-            </div>
-          `;
-        });
-      }
-      return html;
+    // Compact school lunch list (category = 'school')
+    const buildLunchHTML = () => {
+      const dates = Object.keys(menusByDate).sort();
+      const rows = dates
+        .map((date) => {
+          const items = menusByDate[date]
+            .filter((m: any) => m.category === 'school')
+            .map((m: any) => esc(m.special_item))
+            .join('; ');
+          return items ? `<li style="margin:0 0 4px;"><strong>${dayLabel(date)}</strong> — ${items}</li>` : '';
+        })
+        .filter(Boolean)
+        .join('');
+      if (!rows) return '<p style="color:#6b7280;margin:0;">No SFUSD lunches listed this week.</p>';
+      return `<ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.45;color:#374151;">${rows}</ul>`;
     };
 
-    const dateRange = `${today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${nextWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    // Compact Arizmendi pizza line per day
+    const buildPizzaHTML = () => {
+      const dates = Object.keys(menusByDate).sort();
+      const rows = dates
+        .map((date) => {
+          const items = menusByDate[date]
+            .filter((m: any) => m.category !== 'school')
+            .map((m: any) => esc(m.special_item))
+            .join('; ');
+          return items ? `<li style="margin:0 0 4px;"><strong>${dayLabel(date)}</strong> — ${items}</li>` : '';
+        })
+        .filter(Boolean)
+        .join('');
+      if (!rows) return '';
+      return `<h2 style="font-size:17px;color:#111827;margin:26px 0 8px;">🍕 Arizmendi pizza</h2>
+        <ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.45;color:#374151;">${rows}</ul>`;
+    };
+
+    const dateRange = `${today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' })}–${nextWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' })}`;
+
+    const eventsHTML = buildEventsHTML();
+    const lunchHTML = buildLunchHTML();
+    const pizzaHTML = buildPizzaHTML();
 
     // Send emails with rate limiting (2 per second max)
     let successCount = 0;
@@ -163,31 +189,29 @@ serve(async (req) => {
     for (let i = 0; i < subscribers.length; i++) {
       const subscriber = subscribers[i];
       const unsubscribeUrl = `https://outersunset.today/unsubscribe/${subscriber.unsubscribe_token}`;
-      
+
       const emailHTML = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #2c5282; border-bottom: 2px solid #4299e1; padding-bottom: 10px;">
-            🌅 Outer Sunset Today
-          </h1>
-          <p style="color: #4a5568; font-size: 16px;">Your weekly guide to the neighborhood • ${dateRange}</p>
-          
-          <h2 style="color: #2c5282; margin-top: 30px;">📅 This Week's Events</h2>
-          ${buildEventsHTML()}
-          
-          <h2 style="color: #2c5282; margin-top: 30px;">🍽️ This Week's Food Highlights</h2>
-          ${buildMenusHTML()}
-          
-          <hr style="border: 1px solid #e2e8f0; margin: 30px 0;" />
-          
-          <p style="color: #718096; font-size: 14px; text-align: center;">
-            Visit <a href="https://outersunset.today" style="color: #4299e1;">outersunset.today</a> for the latest updates
+        <div style="font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;background:#F5F2ED;">
+          <h1 style="font-size:20px;margin:0 0 2px;color:#111827;">🌅 Outer Sunset Today</h1>
+          <p style="margin:0 0 18px;color:#6b7280;font-size:14px;">The week ahead · ${dateRange}</p>
+
+          <h2 style="font-size:17px;color:#111827;margin:0 0 4px;">📅 Events</h2>
+          ${eventsHTML}
+
+          <h2 style="font-size:17px;color:#111827;margin:26px 0 8px;">🍽️ SFUSD school lunch</h2>
+          ${lunchHTML}
+
+          ${pizzaHTML}
+
+          <p style="margin:26px 0 6px;font-size:14px;">
+            <a href="https://outersunset.today" style="${link}">See the full calendar →</a>
           </p>
-          
-          <p style="color: #a0aec0; font-size: 12px; text-align: center;">
-            <a href="${unsubscribeUrl}" style="color: #a0aec0;">Unsubscribe from this newsletter</a>
+          <p style="color:#9ca3af;font-size:12px;margin:0;">
+            Event titles link to their source. <a href="${unsubscribeUrl}" style="color:#9ca3af;">Unsubscribe</a>
           </p>
         </div>
       `;
+
 
       try {
         const { error: emailError } = await resend.emails.send({
