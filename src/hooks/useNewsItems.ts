@@ -29,6 +29,7 @@ export function useNewsItems() {
         .from('news_items')
         .select('*')
         .gte('created_at', cutoff)
+        .order('created_at', { ascending: false })
         .order('relevance_score', { ascending: false })
         .limit(4);
 
