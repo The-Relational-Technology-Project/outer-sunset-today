@@ -16,9 +16,12 @@ const PRIMARY_EVENT_PAGES = [
   { name: "Civic Joy Fund Cleanups", url: "https://www.mobilize.us/civicjoyfund/" },
   { name: "Blackbird Cafe", url: "https://blackbirdsf.com/pages/events" },
   { name: "Sealevel Studio", url: "https://sealevelsf.com/pages/events" },
-  { name: "Outer Village", url: "https://www.outervillagesf.com/classes-events" },
-  { name: "Ortega Library", url: "https://sfpl.org/events/#!/filters?field_event_location_target_id=46" },
-  { name: "Richmond Library", url: "https://sfpl.org/locations/richmond" },
+  { name: "Outer Village", url: "https://www.outervillagesf.com/book-a-class" },
+  // SFPL branch listings must use the server-rendered filter query (the #! hash
+  // route returns an empty JS shell). 46 = Ortega, 57 = Richmond.
+  { name: "Ortega Library", url: "https://sfpl.org/events?field_event_location_target_id=46" },
+  { name: "Richmond Library", url: "https://sfpl.org/events?field_event_location_target_id=57" },
+
   { name: "Inner Sunset Park Neighbors", url: "https://www.inner-sunset.org/events-2/" },
 ];
 
