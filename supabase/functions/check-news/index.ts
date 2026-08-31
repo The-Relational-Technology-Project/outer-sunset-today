@@ -308,13 +308,42 @@ serve(async (req) => {
       });
     }
 
+    console.log(
+      "CANDIDATES:",
+      JSON.stringify(newArticles.map((h, i) => ({ i, source: h.article.sourceName, title: h.article.title })))
+    );
+
     // Send to Claude for analysis
     const claudeResults = await analyzeWithClaude(newArticles.map((h) => h.article));
     console.log(`Claude returned ${claudeResults.length} articles`);
+    console.log(
+      "CURATOR RESULTS:",
+      JSON.stringify(
+        claudeResults.map((r: any) => ({
+          index: r.index,
+          title: newArticles[r.index]?.article.title,
+          score: r.relevance_score,
+          category: r.category,
+        }))
+      )
+    );
 
     // Filter out articles below relevance threshold (server-side safety net)
-    const relevantResults = claudeResults.filter((r: any) => r.relevance_score >= 0.6);
-    console.log(`${relevantResults.length} articles passed 0.6 relevance threshold`);
+    const THRESHOLD = 0.55;
+    let relevantResults = claudeResults.filter((r: any) => r.relevance_score >= THRESHOLD);
+    console.log(`${relevantResults.length} articles passed ${THRESHOLD} relevance threshold`);
+
+    for (const r of claudeResults.filter((r: any) => r.relevance_score < THRESHOLD)) {
+      console.log(`REJECTED (score ${r.relevance_score}): ${newArticles[r.index]?.article.title}`);
+    }
+
+    // Never leave the section empty: if nothing cleared the bar, keep the
+    // single best candidate the curator returned.
+    if (relevantResults.length === 0 && claudeResults.length > 0) {
+      const best = [...claudeResults].sort((a: any, b: any) => b.relevance_score - a.relevance_score)[0];
+      console.log(`FALLBACK: no story cleared ${THRESHOLD}, keeping best candidate (score ${best.relevance_score})`);
+      relevantResults = [best];
+    }
 
     // Upsert relevant articles
     let insertedCount = 0;
