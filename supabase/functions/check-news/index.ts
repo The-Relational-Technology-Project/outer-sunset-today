@@ -10,7 +10,7 @@ const corsHeaders = {
 const RSS_SOURCES = [
   { name: "Mission Local", url: "https://missionlocal.org/feed/" },
   { name: "Richmond Sunset News", url: "https://richmondsunsetnews.com/feed/" },
-  { name: "The Frisc", url: "https://thefrisc.com/feed" },
+  { name: "The Frisc", url: "https://thefrisc.com/feed/" },
 ];
 
 interface ParsedArticle {
@@ -150,7 +150,11 @@ async function analyzeWithClaude(articles: ParsedArticle[]): Promise<any[]> {
 
 This site, Outer Sunset Today, exists to help neighbors stay informed about what matters most in their daily lives. It is NOT a news site — it is a community bulletin board. The tone is calm, helpful, and neighborly.
 
-SELECTION: Choose between 1 and 4 stories — only include stories that genuinely matter to Outer Sunset / Richmond neighbors. It is BETTER to return 1 great story than 4 mediocre ones. Every story must score at least 0.6 relevance. Force-rank using the News Futures Hierarchy of Information Needs:
+SELECTION: Choose between 1 and 4 stories — only include stories that genuinely matter to Outer Sunset / Richmond neighbors. It is BETTER to return 1 great story than 4 mediocre ones. Aim for stories scoring at least 0.55 relevance. Force-rank using the News Futures Hierarchy of Information Needs:
+
+CITY-WIDE STORIES COUNT: San Francisco-wide news about SFUSD schools, Muni/transit, housing and rent policy, ballot measures and elections, and the Great Highway / Ocean Beach is directly relevant to Sunset and Richmond readers even when the neighborhood is not named. Do not reject these for lacking an explicit Sunset/Richmond mention.
+
+ALWAYS RETURN SOMETHING: Even on a slow news day, return your single best candidate with an honest relevance_score (it may be below 0.55) rather than an empty list. Only return an empty list if every article is clearly irrelevant to San Francisco residents or is excluded by the crime rules below.
 
 TIER 1 — BASIC NEEDS & SAFETY (highest priority):
 Housing stability, rent/eviction policy, transit disruptions (N-Judah, L-Taraval, 5-Fulton, 28-19th Ave, 29-Sunset), food access, economic opportunity, safety alerts, school enrollment/closures, healthcare access. These stories matter even if they don't name the Sunset/Richmond — e.g., an SFUSD policy change affects Sunset families; a Great Highway decision has direct spillover.
@@ -182,7 +186,7 @@ For each selected article, rewrite the headline to be:
 For each article, provide:
 - index: article index from input
 - display_title: your rewritten headline
-- relevance_score: 0.0–1.0 (Tier 1 starts at 0.7; Tier 4 caps at 0.5). MINIMUM 0.6 to be included.
+- relevance_score: 0.0–1.0 (Tier 1 starts at 0.7; Tier 4 caps at 0.5). Target 0.55 or above for inclusion.
 - category: housing | transit | business | community | government | education | environment | safety | health | culture
 - is_actionable: true if a resident can DO something
 - summary: 1–2 sentences for a neighbor. Plain language. What it means here, what they can do.
@@ -194,7 +198,7 @@ SUMMARY ACCURACY (CRITICAL):
 - If you can't generate an accurate summary from the body, lower the relevance_score and omit the article.
 - Do not append generic civic boilerplate like "residents can vote" or "neighbors should attend" unless the article specifically tells them to.
 
-Return 1–4 articles. Only include stories scoring 0.6 or above. If only 1 story clears that bar, return just 1. Skip national news, sports, celebrity, arts/culture reviews with no neighborhood angle, and stories with no SF neighborhood relevance.`;
+Return 1–4 articles, ordered best first. If only 1 story clears the bar, return just 1 — but always return at least your best candidate unless nothing is remotely relevant. Skip national news, sports, celebrity, arts/culture reviews with no neighborhood angle, and stories with no SF relevance.`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -271,7 +275,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log("Fetching RSS articles...");
-    const articles = await fetchRSSArticles(48);
+    // 96 hours: the hyperlocal sources (Richmond Sunset News, The Frisc)
+    // publish only a few times a week, so a 48-hour window often sees
+    // nothing but Mission-District coverage. Dedupe by hash keeps repeats out.
+    const articles = await fetchRSSArticles(96);
     console.log(`Found ${articles.length} recent articles across all sources`);
 
     if (articles.length === 0) {
@@ -304,13 +311,42 @@ serve(async (req) => {
       });
     }
 
+    console.log(
+      "CANDIDATES:",
+      JSON.stringify(newArticles.map((h, i) => ({ i, source: h.article.sourceName, title: h.article.title })))
+    );
+
     // Send to Claude for analysis
     const claudeResults = await analyzeWithClaude(newArticles.map((h) => h.article));
     console.log(`Claude returned ${claudeResults.length} articles`);
+    console.log(
+      "CURATOR RESULTS:",
+      JSON.stringify(
+        claudeResults.map((r: any) => ({
+          index: r.index,
+          title: newArticles[r.index]?.article.title,
+          score: r.relevance_score,
+          category: r.category,
+        }))
+      )
+    );
 
     // Filter out articles below relevance threshold (server-side safety net)
-    const relevantResults = claudeResults.filter((r: any) => r.relevance_score >= 0.6);
-    console.log(`${relevantResults.length} articles passed 0.6 relevance threshold`);
+    const THRESHOLD = 0.55;
+    let relevantResults = claudeResults.filter((r: any) => r.relevance_score >= THRESHOLD);
+    console.log(`${relevantResults.length} articles passed ${THRESHOLD} relevance threshold`);
+
+    for (const r of claudeResults.filter((r: any) => r.relevance_score < THRESHOLD)) {
+      console.log(`REJECTED (score ${r.relevance_score}): ${newArticles[r.index]?.article.title}`);
+    }
+
+    // Never leave the section empty: if nothing cleared the bar, keep the
+    // single best candidate the curator returned.
+    if (relevantResults.length === 0 && claudeResults.length > 0) {
+      const best = [...claudeResults].sort((a: any, b: any) => b.relevance_score - a.relevance_score)[0];
+      console.log(`FALLBACK: no story cleared ${THRESHOLD}, keeping best candidate (score ${best.relevance_score})`);
+      relevantResults = [best];
+    }
 
     // Upsert relevant articles
     let insertedCount = 0;

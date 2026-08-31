@@ -21,13 +21,15 @@ export function useNewsItems() {
   return useQuery({
     queryKey: ['news-items'],
     queryFn: async () => {
-      // Get news from the last 48 hours
-      const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      // Show the most recent stories from the last 7 days so a quiet
+      // news day never blanks the section.
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const { data, error } = await supabase
         .from('news_items')
         .select('*')
         .gte('created_at', cutoff)
+        .order('created_at', { ascending: false })
         .order('relevance_score', { ascending: false })
         .limit(4);
 
