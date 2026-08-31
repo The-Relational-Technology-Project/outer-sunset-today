@@ -10,7 +10,7 @@ const corsHeaders = {
 const RSS_SOURCES = [
   { name: "Mission Local", url: "https://missionlocal.org/feed/" },
   { name: "Richmond Sunset News", url: "https://richmondsunsetnews.com/feed/" },
-  { name: "The Frisc", url: "https://thefrisc.com/feed" },
+  { name: "The Frisc", url: "https://thefrisc.com/feed/" },
 ];
 
 interface ParsedArticle {
