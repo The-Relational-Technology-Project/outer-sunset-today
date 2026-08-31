@@ -275,7 +275,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log("Fetching RSS articles...");
-    const articles = await fetchRSSArticles(48);
+    // 96 hours: the hyperlocal sources (Richmond Sunset News, The Frisc)
+    // publish only a few times a week, so a 48-hour window often sees
+    // nothing but Mission-District coverage. Dedupe by hash keeps repeats out.
+    const articles = await fetchRSSArticles(96);
     console.log(`Found ${articles.length} recent articles across all sources`);
 
     if (articles.length === 0) {
