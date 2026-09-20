@@ -846,11 +846,12 @@ serve(async (req) => {
     };
 
 
-    const [primaryEventResults, pizzaResults, searchResults, icalResults] = await Promise.all([
+    const [primaryEventResults, pizzaResults, searchResults, icalResults, sfplResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
       scrapePizzaWithRetry(),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
       Promise.all(ICAL_SOURCES.map(s => fetchIcalSource(s, weekStart, weekEnd))),
+      Promise.all(SFPL_SOURCES.map(s => fetchSfplBranch(s, weekStart, weekEnd))),
     ]);
 
     // Collected per-source { name, url, content } so we can extract per source
@@ -864,6 +865,17 @@ serve(async (req) => {
       icalEvents.push(...r.events);
     }
     console.log(`iCal sources contributed ${icalEvents.length} events`);
+
+    // Collect SFPL branch programs (direct HTML parse, no AI).
+    const sfplEvents: any[] = [];
+    for (const r of sfplResults) {
+      sourceResults.push({ name: `${r.name} (SFPL)`, success: r.success });
+      sfplEvents.push(...r.events);
+      if (r.events.length === 0) {
+        console.warn(`SFPL_EMPTY: ${r.name} returned 0 events in range`);
+      }
+    }
+    console.log(`SFPL sources contributed ${sfplEvents.length} events`);
 
     // Process primary event results
     for (let i = 0; i < primaryEventResults.length; i++) {
