@@ -17,12 +17,23 @@ const PRIMARY_EVENT_PAGES = [
   { name: "Blackbird Cafe", url: "https://blackbirdsf.com/pages/events" },
   { name: "Sealevel Studio", url: "https://sealevelsf.com/pages/events" },
   { name: "Outer Village", url: "https://www.outervillagesf.com/book-a-class" },
-  // SFPL branch listings must use the server-rendered filter query (the #! hash
-  // route returns an empty JS shell). 46 = Ortega, 57 = Richmond.
-  { name: "Ortega Library", url: "https://sfpl.org/events?field_event_location_target_id=46" },
-  { name: "Richmond Library", url: "https://sfpl.org/events?field_event_location_target_id=57" },
-
   { name: "Inner Sunset Park Neighbors", url: "https://www.inner-sunset.org/events-2/" },
+];
+
+// SFPL branch listings are server-rendered with a stable markup pattern, so we
+// parse them directly instead of routing them through Firecrawl + AI (which
+// kept returning zero library events). 46 = Ortega, 57 = Richmond.
+const SFPL_SOURCES = [
+  {
+    name: "Ortega Library",
+    url: "https://sfpl.org/events?field_event_location_target_id=46",
+    location: "Ortega Library, 3223 Ortega St",
+  },
+  {
+    name: "Richmond Library",
+    url: "https://sfpl.org/events?field_event_location_target_id=57",
+    location: "Richmond Library, 351 9th Ave",
+  },
 ];
 
 // iCal sources - parsed directly, no AI, no truncation. For Squarespace, the
@@ -60,6 +71,7 @@ const SECONDARY_EVENT_PAGES = [
   { name: "Dance Garden SF", url: "https://www.dancegardensf.com/" },
   { name: "SF Nature Education", url: "https://www.sfnature.org/" },
   { name: "VolunTracker Volunteer Shifts", url: "https://voluntracker-embed-seven.vercel.app/" },
+  { name: "Green Apple Books on the Park", url: "https://www.greenapplebooks.com/events" },
 ];
 
 const PIZZA_SOURCES = [
@@ -198,6 +210,8 @@ async function extractEventsWithAI(
         'The Outer Sunset Farmers Market & Mercantile happens ONLY on SUNDAYS, 10:00–15:00 Pacific Time, at 37th Avenue between Ortega and Quintara. When emitting the recurring event for a week, the event_date MUST be a Sunday, start_time MUST be 10:00, end_time 15:00. Never emit it on any other day of the week. Emit exactly ONE entry per Sunday in range; drop any trademark symbols (™) from the title so it reads "Outer Sunset Farmers Market & Mercantile".',
       'VolunTracker Volunteer Shifts':
         'This is a citywide volunteer-shift aggregator table with columns TIME / EVENT / ORGANIZATION / AREA / CATEGORY, grouped under date headings like "August 12". ONLY return rows whose AREA is one of: Outer Sunset, Inner Sunset, Outer Richmond, Ocean Beach, Sunset Dunes, Noriega Sunset Lounge. Discard every other area (Tenderloin, SoMa, Mission, Parkside, Golden Gate Park, Inner Richmond, etc.). Title format: "<EVENT> — <ORGANIZATION>" (skip the dash if the org name is already in the event name). Use the AREA as the location, event_type "volunteer", and a short description naming the organization.',
+      'Green Apple Books on the Park':
+        'Green Apple lists author events for several stores. ONLY keep events whose entry is prefixed "9th Ave:" (Books on the Park, 1231 9th Ave, Inner Sunset) or "Clement:" (Outer Richmond). SKIP anything marked "Offsite:" or "SOLD OUT". Entries look like "Sep 28 9th Ave: Diana Kapp with Heather Knight" with the time given in the description ("at 7pm"). Strip the "9th Ave:" / "Clement:" prefix from the title. Location is "Green Apple Books on the Park, 1231 9th Ave" for 9th Ave events and "Green Apple Books, 506 Clement St" for Clement events. event_type is "art".',
     };
     const hint = sourceHints[sourceName] || '';
 
