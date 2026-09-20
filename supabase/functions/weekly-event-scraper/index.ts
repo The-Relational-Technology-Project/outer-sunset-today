@@ -697,6 +697,93 @@ async function fetchIcalSource(
   }
 }
 
+// --- SFPL branch listings -----------------------------------------------------
+// sfpl.org renders each program as an <article class="event ..."> with a
+// "Weekday, M/D/YYYY, HH:MM - HH:MM" range and an <h2 class="event__title">.
+// Parsing it directly is deterministic and cannot be lost to AI truncation.
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function sfplEventType(title: string, topics: string): string {
+  const t = `${title} ${topics}`.toLowerCase();
+  if (/storytime|babies|toddler|families|chess|trinket|puppy|teen/.test(t)) return 'family';
+  if (/meditation|fitness|wellness|health|yoga/.test(t)) return 'wellness';
+  if (/music|performance|jazz|dance/.test(t)) return 'music';
+  if (/knitting|craft|art|creative|book club|reading|writ/.test(t)) return 'art';
+  return 'community';
+}
+
+async function fetchSfplBranch(
+  source: { name: string; url: string; location: string },
+  weekStart: string,
+  weekEnd: string,
+): Promise<{ name: string; events: any[]; success: boolean }> {
+  try {
+    const res = await fetch(source.url, {
+      headers: { 'User-Agent': 'OuterSunsetToday/1.0 (outersunset.today)' },
+    });
+    if (!res.ok) {
+      console.error(`SFPL fetch failed ${source.name}: ${res.status}`);
+      return { name: source.name, events: [], success: false };
+    }
+    const html = await res.text();
+    const articles = html.match(/<article[^>]*class="[^"]*\bevent\b[^"]*"[\s\S]*?<\/article>/g) || [];
+    console.log(`SFPL ${source.name}: ${articles.length} article blocks`);
+
+    const events: any[] = [];
+    for (const block of articles) {
+      const dateMatch = block.match(
+        /class="date-display-range">([^<]+)<|class="date-display-single">([^<]+)</,
+      );
+      const titleMatch = block.match(/class="event__title"[\s\S]*?<a[^>]*>\s*<span>([\s\S]*?)<\/span>/);
+      const hrefMatch = block.match(/class="event__title"[\s\S]*?<a href="([^"]+)"/);
+      if (!dateMatch || !titleMatch) continue;
+
+      const raw = decodeEntities(dateMatch[1] || dateMatch[2] || '');
+      // "Monday, 9/21/2026, 10:30 - 11:00"
+      const parts = raw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2}):(\d{2})(?:\s*-\s*(\d{1,2}):(\d{2}))?/);
+      if (!parts) continue;
+
+      const [, mo, day, yr, sh, sm, eh, em] = parts;
+      const event_date = `${yr}-${mo.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      if (event_date < weekStart || event_date >= weekEnd) continue;
+
+      const title = decodeEntities(titleMatch[1]);
+      const topics = decodeEntities(
+        (block.match(/field--name-field-event-topic[\s\S]*?<\/div>\s*<\/div>/) || [''])[0].replace(/<[^>]+>/g, ' '),
+      );
+
+      events.push({
+        title,
+        location: source.location,
+        event_date,
+        start_time: `${sh.padStart(2, '0')}:${sm}`,
+        end_time: eh ? `${eh.padStart(2, '0')}:${em}` : undefined,
+        description: `Free program at the ${source.name.replace(' Library', '')} branch of the San Francisco Public Library.`,
+        event_type: sfplEventType(title, topics),
+        source_url: hrefMatch ? `https://sfpl.org${hrefMatch[1]}` : source.url,
+      });
+    }
+
+    console.log(`SFPL ${source.name}: ${events.length} events in range`);
+    return { name: source.name, events, success: articles.length > 0 };
+  } catch (err) {
+    console.error(`SFPL error ${source.name}:`, err);
+    return { name: source.name, events: [], success: false };
+  }
+}
+
+
 // --- Run-wide dedupe ----------------------------------------------------------
 // Uses the shared fuzzy matcher (canonical venue + date + start-time window +
 // normalized title overlap) so the same event coming from an iCal feed, a
