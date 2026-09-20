@@ -1,7 +1,40 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { dedupeEventList } from "../_shared/event-identity.ts";
+import { dedupeEventList, venueKey } from "../_shared/event-identity.ts";
+
+// Keep any single venue from dominating the week. Distinct program titles are
+// kept first (spread across days), then repeats of the same recurring class.
+function capPerVenue<T extends { title: string; location: string; event_date: string }>(
+  events: T[],
+  max: number,
+): T[] {
+  const byVenue = new Map<string, T[]>();
+  for (const e of events) {
+    const k = venueKey(e.location || '');
+    if (!byVenue.has(k)) byVenue.set(k, []);
+    byVenue.get(k)!.push(e);
+  }
+
+  const kept: T[] = [];
+  for (const [, list] of byVenue) {
+    if (list.length <= max) {
+      kept.push(...list);
+      continue;
+    }
+    const sorted = [...list].sort((a, b) => a.event_date.localeCompare(b.event_date));
+    const seenTitles = new Set<string>();
+    const firsts: T[] = [];
+    const repeats: T[] = [];
+    for (const e of sorted) {
+      const t = (e.title || '').toLowerCase().trim();
+      if (seenTitles.has(t)) repeats.push(e);
+      else { seenTitles.add(t); firsts.push(e); }
+    }
+    kept.push(...[...firsts, ...repeats].slice(0, max));
+  }
+  return kept;
+}
 
 
 const corsHeaders = {
@@ -17,12 +50,23 @@ const PRIMARY_EVENT_PAGES = [
   { name: "Blackbird Cafe", url: "https://blackbirdsf.com/pages/events" },
   { name: "Sealevel Studio", url: "https://sealevelsf.com/pages/events" },
   { name: "Outer Village", url: "https://www.outervillagesf.com/book-a-class" },
-  // SFPL branch listings must use the server-rendered filter query (the #! hash
-  // route returns an empty JS shell). 46 = Ortega, 57 = Richmond.
-  { name: "Ortega Library", url: "https://sfpl.org/events?field_event_location_target_id=46" },
-  { name: "Richmond Library", url: "https://sfpl.org/events?field_event_location_target_id=57" },
-
   { name: "Inner Sunset Park Neighbors", url: "https://www.inner-sunset.org/events-2/" },
+];
+
+// SFPL branch listings are server-rendered with a stable markup pattern, so we
+// parse them directly instead of routing them through Firecrawl + AI (which
+// kept returning zero library events). 46 = Ortega, 57 = Richmond.
+const SFPL_SOURCES = [
+  {
+    name: "Ortega Library",
+    url: "https://sfpl.org/events?field_event_location_target_id=46",
+    location: "Ortega Library, 3223 Ortega St",
+  },
+  {
+    name: "Richmond Library",
+    url: "https://sfpl.org/events?field_event_location_target_id=57",
+    location: "Richmond Library, 351 9th Ave",
+  },
 ];
 
 // iCal sources - parsed directly, no AI, no truncation. For Squarespace, the
@@ -60,6 +104,7 @@ const SECONDARY_EVENT_PAGES = [
   { name: "Dance Garden SF", url: "https://www.dancegardensf.com/" },
   { name: "SF Nature Education", url: "https://www.sfnature.org/" },
   { name: "VolunTracker Volunteer Shifts", url: "https://voluntracker-embed-seven.vercel.app/" },
+  { name: "Green Apple Books on the Park", url: "https://www.greenapplebooks.com/events" },
 ];
 
 const PIZZA_SOURCES = [
@@ -198,6 +243,8 @@ async function extractEventsWithAI(
         'The Outer Sunset Farmers Market & Mercantile happens ONLY on SUNDAYS, 10:00–15:00 Pacific Time, at 37th Avenue between Ortega and Quintara. When emitting the recurring event for a week, the event_date MUST be a Sunday, start_time MUST be 10:00, end_time 15:00. Never emit it on any other day of the week. Emit exactly ONE entry per Sunday in range; drop any trademark symbols (™) from the title so it reads "Outer Sunset Farmers Market & Mercantile".',
       'VolunTracker Volunteer Shifts':
         'This is a citywide volunteer-shift aggregator table with columns TIME / EVENT / ORGANIZATION / AREA / CATEGORY, grouped under date headings like "August 12". ONLY return rows whose AREA is one of: Outer Sunset, Inner Sunset, Outer Richmond, Ocean Beach, Sunset Dunes, Noriega Sunset Lounge. Discard every other area (Tenderloin, SoMa, Mission, Parkside, Golden Gate Park, Inner Richmond, etc.). Title format: "<EVENT> — <ORGANIZATION>" (skip the dash if the org name is already in the event name). Use the AREA as the location, event_type "volunteer", and a short description naming the organization.',
+      'Green Apple Books on the Park':
+        'Green Apple lists author events for several stores. ONLY keep events whose entry is prefixed "9th Ave:" (Books on the Park, 1231 9th Ave, Inner Sunset) or "Clement:" (Outer Richmond). SKIP anything marked "Offsite:" or "SOLD OUT". Entries look like "Sep 28 9th Ave: Diana Kapp with Heather Knight" with the time given in the description ("at 7pm"). Strip the "9th Ave:" / "Clement:" prefix from the title. Location is "Green Apple Books on the Park, 1231 9th Ave" for 9th Ave events and "Green Apple Books, 506 Clement St" for Clement events. event_type is "art".',
     };
     const hint = sourceHints[sourceName] || '';
 
@@ -683,6 +730,93 @@ async function fetchIcalSource(
   }
 }
 
+// --- SFPL branch listings -----------------------------------------------------
+// sfpl.org renders each program as an <article class="event ..."> with a
+// "Weekday, M/D/YYYY, HH:MM - HH:MM" range and an <h2 class="event__title">.
+// Parsing it directly is deterministic and cannot be lost to AI truncation.
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function sfplEventType(title: string, topics: string): string {
+  const t = `${title} ${topics}`.toLowerCase();
+  if (/storytime|babies|toddler|families|chess|trinket|puppy|teen/.test(t)) return 'family';
+  if (/meditation|fitness|wellness|health|yoga/.test(t)) return 'wellness';
+  if (/music|performance|jazz|dance/.test(t)) return 'music';
+  if (/knitting|craft|art|creative|book club|reading|writ/.test(t)) return 'art';
+  return 'community';
+}
+
+async function fetchSfplBranch(
+  source: { name: string; url: string; location: string },
+  weekStart: string,
+  weekEnd: string,
+): Promise<{ name: string; events: any[]; success: boolean }> {
+  try {
+    const res = await fetch(source.url, {
+      headers: { 'User-Agent': 'OuterSunsetToday/1.0 (outersunset.today)' },
+    });
+    if (!res.ok) {
+      console.error(`SFPL fetch failed ${source.name}: ${res.status}`);
+      return { name: source.name, events: [], success: false };
+    }
+    const html = await res.text();
+    const articles = html.match(/<article[^>]*class="[^"]*\bevent\b[^"]*"[\s\S]*?<\/article>/g) || [];
+    console.log(`SFPL ${source.name}: ${articles.length} article blocks`);
+
+    const events: any[] = [];
+    for (const block of articles) {
+      const dateMatch = block.match(
+        /class="date-display-range">([^<]+)<|class="date-display-single">([^<]+)</,
+      );
+      const titleMatch = block.match(/class="event__title"[\s\S]*?<a[^>]*>\s*<span>([\s\S]*?)<\/span>/);
+      const hrefMatch = block.match(/class="event__title"[\s\S]*?<a href="([^"]+)"/);
+      if (!dateMatch || !titleMatch) continue;
+
+      const raw = decodeEntities(dateMatch[1] || dateMatch[2] || '');
+      // "Monday, 9/21/2026, 10:30 - 11:00"
+      const parts = raw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2}):(\d{2})(?:\s*-\s*(\d{1,2}):(\d{2}))?/);
+      if (!parts) continue;
+
+      const [, mo, day, yr, sh, sm, eh, em] = parts;
+      const event_date = `${yr}-${mo.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      if (event_date < weekStart || event_date >= weekEnd) continue;
+
+      const title = decodeEntities(titleMatch[1]);
+      const topics = decodeEntities(
+        (block.match(/field--name-field-event-topic[\s\S]*?<\/div>\s*<\/div>/) || [''])[0].replace(/<[^>]+>/g, ' '),
+      );
+
+      events.push({
+        title,
+        location: source.location,
+        event_date,
+        start_time: `${sh.padStart(2, '0')}:${sm}`,
+        end_time: eh ? `${eh.padStart(2, '0')}:${em}` : undefined,
+        description: `Free program at the ${source.name.replace(' Library', '')} branch of the San Francisco Public Library.`,
+        event_type: sfplEventType(title, topics),
+        source_url: hrefMatch ? `https://sfpl.org${hrefMatch[1]}` : source.url,
+      });
+    }
+
+    console.log(`SFPL ${source.name}: ${events.length} events in range`);
+    return { name: source.name, events, success: articles.length > 0 };
+  } catch (err) {
+    console.error(`SFPL error ${source.name}:`, err);
+    return { name: source.name, events: [], success: false };
+  }
+}
+
+
 // --- Run-wide dedupe ----------------------------------------------------------
 // Uses the shared fuzzy matcher (canonical venue + date + start-time window +
 // normalized title overlap) so the same event coming from an iCal feed, a
@@ -745,11 +879,12 @@ serve(async (req) => {
     };
 
 
-    const [primaryEventResults, pizzaResults, searchResults, icalResults] = await Promise.all([
+    const [primaryEventResults, pizzaResults, searchResults, icalResults, sfplResults] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
       scrapePizzaWithRetry(),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
       Promise.all(ICAL_SOURCES.map(s => fetchIcalSource(s, weekStart, weekEnd))),
+      Promise.all(SFPL_SOURCES.map(s => fetchSfplBranch(s, weekStart, weekEnd))),
     ]);
 
     // Collected per-source { name, url, content } so we can extract per source
@@ -763,6 +898,17 @@ serve(async (req) => {
       icalEvents.push(...r.events);
     }
     console.log(`iCal sources contributed ${icalEvents.length} events`);
+
+    // Collect SFPL branch programs (direct HTML parse, no AI).
+    const sfplEvents: any[] = [];
+    for (const r of sfplResults) {
+      sourceResults.push({ name: `${r.name} (SFPL)`, success: r.success });
+      sfplEvents.push(...r.events);
+      if (r.events.length === 0) {
+        console.warn(`SFPL_EMPTY: ${r.name} returned 0 events in range`);
+      }
+    }
+    console.log(`SFPL sources contributed ${sfplEvents.length} events`);
 
     // Process primary event results
     for (let i = 0; i < primaryEventResults.length; i++) {
@@ -848,16 +994,28 @@ serve(async (req) => {
         console.warn(`EXTRACTION_EMPTY: source "${r.name}" returned 0 events`);
       }
     }
-    // Add iCal breakdown
+    // Add iCal + SFPL breakdown
     for (const r of icalResults) {
       sourceBreakdown.push({ name: `${r.name} (iCal)`, count: r.events.length });
     }
+    for (const r of sfplResults) {
+      sourceBreakdown.push({ name: `${r.name} (SFPL)`, count: r.events.length });
+    }
 
-    // Merge AI-extracted events with iCal-derived events, then dedupe in-batch
-    const mergedEvents = [...icalEvents, ...aiEvents];
+    // Representativeness guard: one venue's recurring class schedule (Outer
+    // Village, in practice) used to flood the week and crowd out everything
+    // else. Cap how many events a single venue can contribute from the AI
+    // sources, preferring distinct programs over repeats of the same class.
+    const cappedAiEvents = capPerVenue(aiEvents, 6);
+    if (cappedAiEvents.length < aiEvents.length) {
+      console.log(`Venue cap trimmed ${aiEvents.length - cappedAiEvents.length} repeat listing(s)`);
+    }
+
+    // Merge AI-extracted events with iCal- and SFPL-derived events, then dedupe
+    const mergedEvents = [...icalEvents, ...sfplEvents, ...cappedAiEvents];
     const { unique: events, dropped: dedupedInRun } = dedupeEvents(mergedEvents);
     if (dedupedInRun > 0) {
-      console.log(`In-run dedupe removed ${dedupedInRun} duplicate event(s) across iCal + AI sources`);
+      console.log(`In-run dedupe removed ${dedupedInRun} duplicate event(s) across all sources`);
     }
 
     // Diagnose pizza failures with a clear signal
