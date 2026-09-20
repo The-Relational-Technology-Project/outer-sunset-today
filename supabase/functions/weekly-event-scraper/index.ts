@@ -1,7 +1,40 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { dedupeEventList } from "../_shared/event-identity.ts";
+import { dedupeEventList, venueKey } from "../_shared/event-identity.ts";
+
+// Keep any single venue from dominating the week. Distinct program titles are
+// kept first (spread across days), then repeats of the same recurring class.
+function capPerVenue<T extends { title: string; location: string; event_date: string }>(
+  events: T[],
+  max: number,
+): T[] {
+  const byVenue = new Map<string, T[]>();
+  for (const e of events) {
+    const k = venueKey(e.location || '');
+    if (!byVenue.has(k)) byVenue.set(k, []);
+    byVenue.get(k)!.push(e);
+  }
+
+  const kept: T[] = [];
+  for (const [, list] of byVenue) {
+    if (list.length <= max) {
+      kept.push(...list);
+      continue;
+    }
+    const sorted = [...list].sort((a, b) => a.event_date.localeCompare(b.event_date));
+    const seenTitles = new Set<string>();
+    const firsts: T[] = [];
+    const repeats: T[] = [];
+    for (const e of sorted) {
+      const t = (e.title || '').toLowerCase().trim();
+      if (seenTitles.has(t)) repeats.push(e);
+      else { seenTitles.add(t); firsts.push(e); }
+    }
+    kept.push(...[...firsts, ...repeats].slice(0, max));
+  }
+  return kept;
+}
 
 
 const corsHeaders = {
