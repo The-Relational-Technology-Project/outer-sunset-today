@@ -961,16 +961,28 @@ serve(async (req) => {
         console.warn(`EXTRACTION_EMPTY: source "${r.name}" returned 0 events`);
       }
     }
-    // Add iCal breakdown
+    // Add iCal + SFPL breakdown
     for (const r of icalResults) {
       sourceBreakdown.push({ name: `${r.name} (iCal)`, count: r.events.length });
     }
+    for (const r of sfplResults) {
+      sourceBreakdown.push({ name: `${r.name} (SFPL)`, count: r.events.length });
+    }
 
-    // Merge AI-extracted events with iCal-derived events, then dedupe in-batch
-    const mergedEvents = [...icalEvents, ...aiEvents];
+    // Representativeness guard: one venue's recurring class schedule (Outer
+    // Village, in practice) used to flood the week and crowd out everything
+    // else. Cap how many events a single venue can contribute from the AI
+    // sources, preferring distinct programs over repeats of the same class.
+    const cappedAiEvents = capPerVenue(aiEvents, 6);
+    if (cappedAiEvents.length < aiEvents.length) {
+      console.log(`Venue cap trimmed ${aiEvents.length - cappedAiEvents.length} repeat listing(s)`);
+    }
+
+    // Merge AI-extracted events with iCal- and SFPL-derived events, then dedupe
+    const mergedEvents = [...icalEvents, ...sfplEvents, ...cappedAiEvents];
     const { unique: events, dropped: dedupedInRun } = dedupeEvents(mergedEvents);
     if (dedupedInRun > 0) {
-      console.log(`In-run dedupe removed ${dedupedInRun} duplicate event(s) across iCal + AI sources`);
+      console.log(`In-run dedupe removed ${dedupedInRun} duplicate event(s) across all sources`);
     }
 
     // Diagnose pizza failures with a clear signal
