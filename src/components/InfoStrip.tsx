@@ -61,12 +61,12 @@ export const InfoStrip = () => {
         </div>
 
         {/* School Lunch */}
-        <div className="flex items-center gap-2 px-4 py-3 min-w-0">
-          <Utensils className="h-4 w-4 text-primary flex-shrink-0" />
+        <div className="flex items-start sm:items-center gap-2 px-4 py-3 min-w-0">
+          <Utensils className="h-4 w-4 text-primary flex-shrink-0 mt-0.5 sm:mt-0" />
           {isLoadingLunch ? (
             <Skeleton className="h-4 w-40" />
           ) : (
-            <span className="text-xs text-muted-foreground font-handwritten truncate">
+            <span className="text-xs text-muted-foreground font-handwritten whitespace-normal break-words sm:truncate">
               School Lunch{lunch ? ` (${weekdayLabel(lunch.menu_date)})` : ''}:{' '}
               {lunch?.special_item || "No lunch listed"}
             </span>
