@@ -19,10 +19,14 @@ export function useEvents() {
   return useQuery({
     queryKey: ['events'],
     queryFn: async () => {
+      // Only fetch today onward — fetching all history hit the 1,000-row cap
+      // and returned only old events.
+      const todayPT = formatInTimeZone(new Date(), 'America/Los_Angeles', 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('status', 'approved')
+        .gte('event_date', todayPT)
         .order('start_time', { ascending: true });
 
       if (error) throw error;
