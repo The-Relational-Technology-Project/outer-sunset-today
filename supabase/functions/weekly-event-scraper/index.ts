@@ -105,6 +105,8 @@ const SECONDARY_EVENT_PAGES = [
   { name: "SF Nature Education", url: "https://www.sfnature.org/" },
   { name: "VolunTracker Volunteer Shifts", url: "https://voluntracker-embed-seven.vercel.app/" },
   { name: "Green Apple Books on the Park", url: "https://www.greenapplebooks.com/events" },
+  { name: "Sunset Social Club (4114 Judah St)", url: "https://luma.com/sunsetsocialclub" },
+  { name: "Sunset Social Club", url: "https://sunsetsocialclub.org/" },
 ];
 
 const PIZZA_SOURCES = [
