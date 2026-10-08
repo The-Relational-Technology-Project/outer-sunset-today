@@ -26,6 +26,7 @@ export function useEvents() {
         .from('events')
         .select('*')
         .eq('status', 'approved')
+        .eq('archived', false)
         .gte('event_date', todayPT)
         .order('start_time', { ascending: true });
 
@@ -53,6 +54,7 @@ export function useTodaysEvents() {
         .select('*')
         .eq('event_date', today)
         .eq('status', 'approved')
+        .eq('archived', false)
         .order('start_time', { ascending: true });
 
       if (error) throw error;
@@ -76,6 +78,7 @@ export function useUpcomingEvents() {
         .from('events')
         .select('*')
         .eq('status', 'approved')
+        .eq('archived', false)
         .gt('event_date', today)
         .order('start_time', { ascending: true })
         .limit(10);
