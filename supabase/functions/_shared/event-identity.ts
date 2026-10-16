@@ -32,6 +32,8 @@ const VENUE_ALIASES: VenueAlias[] = [
   { canonical: 'SF Botanical Garden', patterns: [/botanical\s*garden/] },
   { canonical: 'Green Apple Books', patterns: [/green\s*apple/] },
   { canonical: 'Arizmendi Bakery', patterns: [/arizmendi/] },
+  { canonical: 'McCoppin Square', patterns: [/mccoppin/] },
+  { canonical: 'Earthfire Arts', patterns: [/earthfire/] },
 ];
 
 /** Collapse a free-form location string onto a canonical venue name. */
