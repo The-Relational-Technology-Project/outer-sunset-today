@@ -159,6 +159,9 @@ export function inCoverageArea(location: string): boolean {
   return IN_AREA.test(l);
 }
 
+// Listings the editor asked us not to carry.
+const EXCLUDED_TITLES = /baby and me pilates/i;
+
 function guessType(text: string): string {
   const t = text.toLowerCase();
   if (/kid|family|trick or treat|toddler|baby|after school|movie/.test(t)) return 'family';
@@ -184,6 +187,10 @@ export function normalizeBoardFeed(ics: string, from: string, to: string): { eve
     const dates = occurrences(raw, from, to);
     if (dates.length === 0) continue;
     const { title, umbrella } = cleanBoardTitle(raw.summary);
+    if (EXCLUDED_TITLES.test(title)) {
+      skipped.push({ title, date: dates[0], reason: 'excluded by editor' });
+      continue;
+    }
     if (!inCoverageArea(raw.location)) {
       skipped.push({ title, date: dates[0], reason: `outside coverage area (${raw.location.split(',')[0]})` });
       continue;
