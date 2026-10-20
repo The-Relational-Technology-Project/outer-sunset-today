@@ -71,7 +71,9 @@ export function titleTokens(title: string, location = ''): string[] {
     .replace(/[^a-z0-9]+/g, ' ')
     .split(' ')
     .map((w) => w.trim())
-    .filter((w) => w.length > 1 && !STOPWORDS.has(w));
+    .filter((w) => w.length > 1 && !STOPWORDS.has(w))
+    // Light plural stemming so "Games + Pie Night" matches "Game and Pie Night".
+    .map((w) => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w));
 }
 
 export function normalizeTitle(title: string, location = ''): string {

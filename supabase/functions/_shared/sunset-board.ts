@@ -9,7 +9,7 @@ export const SUNSET_BOARD_FEED = 'https://sunsetboard.org/calendar.ics';
 
 const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
-interface RawEvent {
+export interface RawEvent {
   summary: string;
   location: string;
   description: string;
