@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { dedupeEventList, venueKey } from "../_shared/event-identity.ts";
 import { fetchSunsetBoard } from "../_shared/sunset-board.ts";
+import { fetchDearCrisis } from "../_shared/dear-crisis.ts";
 
 // Keep any single venue from dominating the week. Distinct program titles are
 // kept first (spread across days), then repeats of the same recurring class.
@@ -895,7 +896,7 @@ serve(async (req) => {
     };
 
 
-    const [primaryEventResults, pizzaResults, searchResults, icalResults, sfplResults, boardResult] = await Promise.all([
+    const [primaryEventResults, pizzaResults, searchResults, icalResults, sfplResults, boardResult, dearCrisisResult] = await Promise.all([
       scrapeBatch(PRIMARY_EVENT_PAGES, firecrawlApiKey, 2000),
       scrapePizzaWithRetry(),
       searchBatch(SEARCH_SOURCES, firecrawlApiKey),
@@ -903,6 +904,8 @@ serve(async (req) => {
       Promise.all(SFPL_SOURCES.map(s => fetchSfplBranch(s, weekStart, weekEnd))),
       // Sunset Board: scanned neighborhood flyers via its iCal feed (no AI).
       fetchSunsetBoard(weekStart, weekEnd),
+      // Dear Crisis Sunset aggregator feed (filtered, no AI).
+      fetchDearCrisis(weekStart, weekEnd),
     ]);
 
     // Collected per-source { name, url, content } so we can extract per source
@@ -917,6 +920,8 @@ serve(async (req) => {
     }
     sourceResults.push({ name: 'Sunset Board (flyers)', success: boardResult.success });
     icalEvents.push(...boardResult.events);
+    sourceResults.push({ name: 'Dear Crisis (feed)', success: dearCrisisResult.success });
+    icalEvents.push(...dearCrisisResult.events);
     console.log(`iCal sources contributed ${icalEvents.length} events (incl. ${boardResult.events.length} Sunset Board)`);
 
     // Collect SFPL branch programs (direct HTML parse, no AI).
@@ -1019,6 +1024,7 @@ serve(async (req) => {
       sourceBreakdown.push({ name: `${r.name} (iCal)`, count: r.events.length });
     }
     sourceBreakdown.push({ name: 'Sunset Board (flyers)', count: boardResult.events.length });
+    sourceBreakdown.push({ name: 'Dear Crisis (feed)', count: dearCrisisResult.events.length });
     for (const r of sfplResults) {
       sourceBreakdown.push({ name: `${r.name} (SFPL)`, count: r.events.length });
     }
