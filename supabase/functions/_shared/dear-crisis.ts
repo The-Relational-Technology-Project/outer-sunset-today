@@ -8,8 +8,8 @@ import { parseBoardFeed, occurrences, type BoardEvent, type BoardSkip } from './
 
 export const DEAR_CRISIS_FEED = 'https://sunset.dearcrisis.com/sunset.ics';
 
-const EXCLUDED_TITLE = /eucharist|worship|taiz[eé]|fellowship|prayer|祈禱|bible|sermon|mass\b|medicare|seminar|investor|pitch|startup|ai tech|real estate|open house|pilates|baby and me/i;
-const EXCLUDED_LOCATION = /^(online|on zoom|zoom|virtual)|remax|realty|st\.? ignatius|lycee|lycée|ucsf dental|chosen people|ce building/i;
+const EXCLUDED_TITLE = /eucharist|worship|taiz[eé]|fellowship|prayer|祈禱|bible|sermon|mass\b|medicare|seminar|investor|pitch|startup|ai tech|real estate|open house|pilates|baby and me|membership class|baptism|precept|vassa|robe offering|send-off|聖餐|宣教|ptsa general|construction meeting|women's gathering/i;
+const EXCLUDED_LOCATION = /^(online|on zoom|zoom|virtual)|^(library|san francisco|inner sunset)$|remax|realty|st\.? ignatius|lycee|lycée|ucsf dental|chosen people|ce building/i;
 // Venues we already ingest more reliably from their own sites.
 const COVERED_ELSEWHERE = /ortega branch library|richmond branch library/i;
 
