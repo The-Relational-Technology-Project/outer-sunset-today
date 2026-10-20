@@ -54,6 +54,14 @@ const PRIMARY_EVENT_PAGES = [
   { name: "Inner Sunset Park Neighbors", url: "https://www.inner-sunset.org/events-2/" },
 ];
 
+// Sources that only list their own venue. Location is forced to this value
+// after AI extraction so it can't be hallucinated.
+const VENUE_LOCKED_SOURCES: Record<string, string> = {
+  "Sealevel Studio": "Sealevel",
+  "Outer Village": "Outer Village (1314 8th Ave)",
+  "Blackbird Cafe": "Black Bird Bookstore",
+};
+
 // SFPL branch listings are server-rendered with a stable markup pattern, so we
 // parse them directly instead of routing them through Firecrawl + AI (which
 // kept returning zero library events). 46 = Ortega, 57 = Richmond.
@@ -260,7 +268,7 @@ CURRENT YEAR: ${todayPT.slice(0, 4)}
 
 ${hint ? `SOURCE-SPECIFIC HINT: ${hint}\n` : ''}For each EVENT, extract:
 - title: Event name (clean, concise)
-- location: Venue name (e.g., "Sealevel", "Ortega Library", "Java Beach Cafe"). IMPORTANT: Use "Sealevel" NOT "Sealevel Studio"
+- location: The venue named in the content for THIS event. Never guess or borrow a venue from another source; if the content names none, use the source's own venue. (Write "Sealevel", not "Sealevel Studio".)
 - event_date: YYYY-MM-DD format (resolve "Today"/"Tomorrow" using the SCRAPE DATE above)
 - start_time: HH:MM (24-hour, Pacific Time)
 - end_time: HH:MM if available (optional)
@@ -317,7 +325,12 @@ ${content}`;
 
     const events = JSON.parse(jsonStr);
     console.log(`AI extracted [${sourceName}]: ${Array.isArray(events) ? events.length : 0} events`);
-    return Array.isArray(events) ? events : [];
+    if (!Array.isArray(events)) return [];
+    // Single-venue sources: the venue comes from the source, never from the AI.
+    // (The AI used to copy the prompt's "Sealevel" example onto Outer Village classes.)
+    const locked = VENUE_LOCKED_SOURCES[sourceName];
+    if (locked) for (const e of events) e.location = locked;
+    return events;
   } catch (error) {
     console.error(`Error in AI event extraction [${sourceName}]:`, error);
     return [];
