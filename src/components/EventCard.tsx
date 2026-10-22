@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ interface EventCardProps {
 
 export function EventCard({ event, compact = false, showAddToPlan = true }: EventCardProps) {
   const { addToPlan, removeFromPlan, isInPlan } = useMyPlan();
+  const [expanded, setExpanded] = useState(false);
   const vibeTag = getVibeTag(event);
   
   const handleAddToPlan = () => {
@@ -77,9 +79,20 @@ export function EventCard({ event, compact = false, showAddToPlan = true }: Even
         </div>
         
         {!compact && (
-          <p className="text-foreground text-base leading-relaxed mb-4">
-            {event.description}
-          </p>
+          <div className="mb-4">
+            <p className={`text-foreground text-base leading-relaxed ${expanded ? '' : 'line-clamp-3'}`}>
+              {event.description}
+            </p>
+            {event.description.length > 160 && (
+              <button
+                type="button"
+                onClick={() => setExpanded(!expanded)}
+                className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 mt-1"
+              >
+                {expanded ? "Show less" : "Show more"}
+              </button>
+            )}
+          </div>
         )}
         
         {(showAddToPlan || event.source_url) && (
