@@ -666,6 +666,7 @@ function parseIcalFeed(
             description: cur.DESCRIPTION ? unescapeIcalText(cur.DESCRIPTION).slice(0, 500) : undefined,
             event_type: source.defaultEventType || 'community',
             source_url: cur.URL ? unescapeIcalText(cur.URL) : (source.listUrl || undefined),
+            verified_calendar_times: true,
           });
         }
       }

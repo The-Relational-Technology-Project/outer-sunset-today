@@ -97,11 +97,23 @@ export interface ComparableEvent {
   event_date: string;
   start_time?: string | null;
   source_url?: string | null;
+  verified_calendar_times?: boolean;
 }
 
 /** Recognize the regular market and its named celebration, not separate activities. */
 export function normalizeEventIdentity<T extends ComparableEvent>(event: T): T {
   const title = event.title.toLowerCase().replace(/['’™®]/g, '').replace(/\s+/g, ' ').trim();
+  const cleanup = /clean[\s-]?up/.test(title);
+  if (cleanup && /surfrider/.test(title) && /^ocean beach\b/i.test(event.location)) {
+    return { ...event, title: 'Surfrider Ocean Beach Cleanup', location: 'Ocean Beach' };
+  }
+  const dunesCleanup = cleanup && (/sunset dunes/.test(title) || /sunset dunes/.test(event.location.toLowerCase()) ||
+    event.source_url === 'https://www.mobilize.us/civicjoyfund/event/757479/');
+  if (dunesCleanup) {
+    const intersection = /judah|noriega|taraval/i.exec(event.location)?.[0]?.toLowerCase();
+    // Keep the rotating meeting locations distinct rather than merging all park events.
+    if (intersection) return { ...event, title: 'Sunset Dunes Community Cleanup', location: `Sunset Dunes at ${intersection}` };
+  }
   const regularMarket = /^(?:outer )?sunset farmers? market(?:\s*(?:&|and)\s*mercantile)?$/.test(title);
   const marketCelebration = /d[ií]a de los muertos/.test(title) &&
     /sunset|market/.test(title) && !/workshop|activity|class|spoon|calavera/.test(title);
@@ -194,6 +206,16 @@ export function backfillFields(
       patch[field] = next;
     }
   }
+  return patch;
+}
+
+/** Only a freshly parsed official calendar can overwrite existing nonempty times. */
+export function verifiedTimeUpdates(existing: ComparableEvent & { end_time?: string | null }, incoming: ComparableEvent & { end_time?: string | null }): Record<string, unknown> {
+  if (!incoming.verified_calendar_times || !incoming.source_url || existing.source_url !== incoming.source_url ||
+      existing.event_date !== incoming.event_date || normalizeTitle(existing.title) !== normalizeTitle(incoming.title)) return {};
+  const patch: Record<string, unknown> = {};
+  if (incoming.start_time && existing.start_time !== incoming.start_time) patch.start_time = incoming.start_time;
+  if (incoming.end_time && existing.end_time !== incoming.end_time) patch.end_time = incoming.end_time;
   return patch;
 }
 

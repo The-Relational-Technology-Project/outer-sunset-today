@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { backfillFields, canonicalVenue, dedupeEventList, isLikelyDuplicate, normalizeEventIdentity } from './event-identity';
+import { backfillFields, canonicalVenue, dedupeEventList, isLikelyDuplicate, normalizeEventIdentity, verifiedTimeUpdates } from './event-identity';
 
 const market = {
   title: 'Outer Sunset Farmers Market & Mercantile',
@@ -22,7 +22,7 @@ describe('Outer Sunset farmers market cross-source identity', () => {
     expect(normalizeEventIdentity(publisher).location).toBe('Outer Sunset Farmers Market, 37th Avenue between Ortega and Quintara');
   });
   test('combines all five listings and keeps celebration details', () => {
-    const result = dedupeEventList([market, publisher, official, celebration, funcheap]);
+    const result = dedupeEventList<{ title: string; location: string; event_date: string; start_time: string; source_url: string | null; description?: string }>([market, publisher, official, celebration, funcheap]);
     expect(result.unique).toHaveLength(1);
     expect(result.dropped).toBe(4);
     expect(result.unique[0].title).toBe('Outer Sunset Farmers Market & Mercantile — Día de los Muertos');
@@ -49,4 +49,26 @@ describe('Outer Sunset farmers market cross-source identity', () => {
     const first = dedupeEventList([market, publisher, official, celebration, funcheap]);
     expect(dedupeEventList([...first.unique, market, publisher, official, celebration, funcheap]).unique).toHaveLength(1);
   });
+});
+
+test('Surfrider title variants consolidate without absorbing another organization', () => {
+  const a = { ...market, title: 'Ocean Beach Cleanup - Surfrider San Francisco', location: 'Ocean Beach' };
+  const b = { ...market, title: 'Surfrider Foundation Beach Clean-up', location: 'Ocean Beach, 48th & Noriega' };
+  expect(isLikelyDuplicate(a, b)).toBe(true);
+  expect(isLikelyDuplicate(a, { ...b, title: 'Golden Gate National Parks Ocean Beach Clean-ups' })).toBe(false);
+});
+
+test('Sunset Dunes cleanups match by rotating meeting intersection', () => {
+  const a = { ...market, title: 'Sunset Dunes Cleanup', location: 'Noriega (Noriega Sunset Lounge), Great Highway & Noriega Street' };
+  const b = { ...market, title: 'Community Cleanup', location: 'Sunset Dunes at Noriega, 1800 Upper Great Highway' };
+  expect(isLikelyDuplicate(a, b)).toBe(true);
+  expect(isLikelyDuplicate(a, { ...b, location: 'Sunset Dunes at Taraval' })).toBe(false);
+});
+
+test('official concert calendar corrects 5 PM to 4:30 PM Pacific on November 1', () => {
+  const a = { ...market, title: "Tchaikovsky's 1812 Overture with the SF Philharmonic", source_url: 'https://sunsetdunes.org/events/1812-orchestra-with-the-sf-philharmonic', start_time: '2026-11-02T01:00:00Z' };
+  const b = { ...a, start_time: '2026-11-02T00:30:00Z', end_time: '2026-11-02T01:30:00Z', verified_calendar_times: true };
+  expect(verifiedTimeUpdates(a, b).start_time).toBe('2026-11-02T00:30:00Z');
+  expect(verifiedTimeUpdates(a, { ...b, verified_calendar_times: false })).toEqual({});
+  expect(verifiedTimeUpdates(a, { ...b, source_url: 'https://example.com/' })).toEqual({});
 });
