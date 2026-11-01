@@ -168,6 +168,7 @@ export function isLikelyDuplicate(a: ComparableEvent, b: ComparableEvent): boole
   b = normalizeEventIdentity(b);
   if (a.event_date !== b.event_date) return false;
   if (venueKey(a.location) !== venueKey(b.location)) return false;
+  if (a.title === 'Sunset Dunes Community Cleanup' && b.title === a.title && a.location !== b.location) return false;
 
   const aMin = minutesOfDay(a.start_time);
   const bMin = minutesOfDay(b.start_time);
