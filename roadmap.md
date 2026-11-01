@@ -2,3 +2,5 @@
 - [ ] Include the Día de los Muertos market celebration in one combined listing today.
 - [ ] Correct shared event identity across all ingestion paths and test regressions.
 - [ ] Deploy the correction and verify the public calendar.
+- [ ] Consolidate Sunset Dunes cleanup duplicates and prevent recurrence.
+- [ ] Verify and correct the SF Philharmonic start time at its source.
