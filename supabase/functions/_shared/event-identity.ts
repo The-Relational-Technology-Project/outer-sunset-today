@@ -19,7 +19,7 @@ const VENUE_ALIASES: VenueAlias[] = [
   { canonical: 'Ortega Library', patterns: [/ortega\s*(branch\s*)?library/] },
   { canonical: 'Richmond Library', patterns: [/richmond\s*(branch\s*)?library/] },
   { canonical: 'Java Beach Cafe', patterns: [/java\s*beach/] },
-  { canonical: 'Outer Sunset Farmers Market', patterns: [/outer\s*sunset\s*farmers?\s*market/, /37th\s*ave.*ortega/] },
+  { canonical: 'Outer Sunset Farmers Market', patterns: [/outer\s*sunset\s*farmer['’]?s?\s*market/, /37th\s*(?:ave|avenue).*ortega/, /1994\s*37th/] },
   { canonical: 'Inner Sunset Farmers Market', patterns: [/inner\s*sunset\s*farmers?\s*market/] },
   { canonical: 'Sunset Village (4114 Judah St)', patterns: [/sunset\s*village/, /4114\s*judah/] },
   { canonical: 'Case for Making', patterns: [/case\s*for\s*making/] },
@@ -63,7 +63,7 @@ export function titleTokens(title: string, location = ''): string[] {
   const venue = canonicalVenue(location).toLowerCase().replace(/\(.*?\)/g, '');
   let t = (title || '').toLowerCase();
   // Drop bracketed/starred admin markers like ***Cancelled***
-  t = t.replace(/\*+/g, ' ');
+  t = t.replace(/\*+/g, ' ').replace(/['’]/g, '');
   for (const word of venue.split(/[^a-z0-9]+/).filter((w) => w.length > 3)) {
     t = t.split(word).join(' ');
   }
@@ -96,6 +96,28 @@ export interface ComparableEvent {
   location: string;
   event_date: string;
   start_time?: string | null;
+  source_url?: string | null;
+}
+
+/** Only the regular market listing: never relabel a workshop or celebration. */
+export function normalizeEventIdentity<T extends ComparableEvent>(event: T): T {
+  const title = event.title.toLowerCase().replace(/['’™®]/g, '').replace(/\s+/g, ' ').trim();
+  const regularMarket = /^(?:outer )?sunset farmers? market(?:\s*(?:&|and)\s*mercantile)?$/.test(title);
+  const knownLocation = venueKey(event.location) === 'outer sunset farmers market';
+  let knownSource = false;
+  try {
+    const url = new URL(event.source_url || '');
+    const host = url.hostname.replace(/^www\./, '');
+    knownSource = (host === 'sunsetmercantilesf.com' && url.pathname === '/osfmm/') ||
+      (host === 'sunsetboard.org' && url.pathname === '/listing/outer-sunset-farmers-market/') ||
+      (host === 'sfsccd.org' && /^\/en\/other-sunset-community-events\/sunset-farmer-market-/.test(url.pathname));
+  } catch { /* A missing source is not evidence of event identity. */ }
+  if (!regularMarket || (!knownLocation && !knownSource)) return event;
+  return {
+    ...event,
+    title: 'Outer Sunset Farmers Market & Mercantile',
+    location: 'Outer Sunset Farmers Market, 37th Avenue between Ortega and Quintara',
+  };
 }
 
 function minutesOfDay(startTime?: string | null): number | null {
@@ -125,6 +147,8 @@ export const TITLE_MATCH_THRESHOLD = 0.7;
  * and strongly overlapping normalized titles.
  */
 export function isLikelyDuplicate(a: ComparableEvent, b: ComparableEvent): boolean {
+  a = normalizeEventIdentity(a);
+  b = normalizeEventIdentity(b);
   if (a.event_date !== b.event_date) return false;
   if (venueKey(a.location) !== venueKey(b.location)) return false;
 
@@ -158,7 +182,8 @@ export function backfillFields(
 export function dedupeEventList<T extends ComparableEvent>(events: T[]): { unique: T[]; dropped: number } {
   const unique: T[] = [];
   let dropped = 0;
-  for (const e of events) {
+  for (const raw of events) {
+    const e = normalizeEventIdentity(raw);
     const match = unique.find((u) => isLikelyDuplicate(u, e));
     if (match) {
       dropped++;
