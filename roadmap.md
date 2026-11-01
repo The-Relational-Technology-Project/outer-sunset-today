@@ -1,0 +1,3 @@
+- [ ] Consolidate today's duplicate Outer Sunset farmers market listings.
+- [ ] Correct shared event identity across all ingestion paths and test regressions.
+- [ ] Deploy the correction and verify the public calendar.
