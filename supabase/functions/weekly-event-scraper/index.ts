@@ -733,9 +733,12 @@ async function fetchIcalSource(
     }));
 
     const all: any[] = [];
-    for (const ics of fetched) {
+    for (const [index, ics] of fetched.entries()) {
       if (ics && ics.includes('BEGIN:VEVENT')) {
-        all.push(...parseIcalFeed(ics, source));
+        const eventPath = uniquePaths[index];
+        if (!eventPath) continue;
+        const eventUrl = source.origin + eventPath.replace(/\?format=ical$/, '');
+        all.push(...parseIcalFeed(ics, source).map((event) => ({ ...event, source_url: eventUrl })));
       }
     }
 
