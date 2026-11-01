@@ -1,0 +1,6 @@
+- [x] Consolidate today's duplicate Outer Sunset farmers market listings.
+- [x] Include the Día de los Muertos market celebration in one combined listing today.
+- [x] Correct shared event identity across all ingestion paths and test regressions.
+- [x] Deploy the correction and verify the public calendar.
+- [x] Consolidate Sunset Dunes cleanup duplicates and prevent recurrence.
+- [x] Verify and correct the SF Philharmonic start time at its source.

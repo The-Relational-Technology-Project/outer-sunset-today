@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isLikelyDuplicate, backfillFields, venueKey } from "../_shared/event-identity.ts";
+import { isLikelyDuplicate, backfillFields, normalizeEventIdentity } from "../_shared/event-identity.ts";
 
 
 const corsHeaders = {
@@ -17,6 +17,7 @@ interface EventInput {
   description?: string;
   event_type: string;
   status?: string;
+  source_url?: string;
 }
 
 // Returns the correct Pacific Time UTC offset for the given YYYY-MM-DD.
@@ -54,27 +55,31 @@ serve(async (req) => {
 
     const results = { inserted: 0, skipped: 0, errors: [] as string[] };
 
-    for (const event of events as EventInput[]) {
+    for (const rawEvent of events as EventInput[]) {
+      const event = normalizeEventIdentity(rawEvent);
       try {
         // Fuzzy duplicate check (same date + canonical venue + close time + similar title)
-        const { data: sameDay } = await supabase
+        const { data: sameDay, error: lookupError } = await supabase
           .from('events')
           .select('id, title, location, event_date, start_time, end_time, description, source_url')
           .eq('event_date', event.event_date)
           .eq('archived', false);
+        if (lookupError) throw lookupError;
 
         const candidate = {
           title: event.title,
           location: event.location,
           event_date: event.event_date,
           start_time: event.start_time,
+          source_url: event.source_url,
         };
         const existing = (sameDay || []).find((row) =>
-          venueKey(row.location) === venueKey(event.location) && isLikelyDuplicate(row, candidate)
+          isLikelyDuplicate(row, candidate)
         );
 
         if (existing) {
           const patch = backfillFields(existing, {
+            ...candidate,
             source_url: (event as any).source_url || null,
             description: event.description || null,
           });

@@ -252,13 +252,13 @@ async function extractEventsWithAI(
       'Sunset Commons':
         'This is an Eventbrite organizer page. Dates appear as "Today • 7:00 PM", "Tomorrow • ...", or "Sat, Jun 14 • ...". Resolve "Today" to the SCRAPE DATE below and "Tomorrow" to scrape date + 1 day. Default location is "Sunset Commons, 1600 Irving St". A "Sales Ended" badge does NOT mean the event is over — only skip if the event_date itself is outside the date range.',
       'Outer Sunset Farmers Market':
-        'The Outer Sunset Farmers Market & Mercantile happens ONLY on SUNDAYS, 10:00–15:00 Pacific Time, at 37th Avenue between Ortega and Quintara. When emitting the recurring event for a week, the event_date MUST be a Sunday, start_time MUST be 10:00, end_time 15:00. Never emit it on any other day of the week. Emit exactly ONE entry per Sunday in range; drop any trademark symbols (™) from the title so it reads "Outer Sunset Farmers Market & Mercantile".',
+        'The Outer Sunset Farmers Market & Mercantile happens ONLY on SUNDAYS at 37th Avenue between Ortega and Quintara. Extract the current hours from the official source (currently 09:00–14:00 Pacific); do not invent hours. Never emit it on another weekday. Emit exactly ONE entry per Sunday in range; include any market-wide celebration in that entry rather than as another market listing. Drop trademark symbols from the title.',
       'VolunTracker Volunteer Shifts':
         'This is a citywide volunteer-shift aggregator table with columns TIME / EVENT / ORGANIZATION / AREA / CATEGORY, grouped under date headings like "August 12". ONLY return rows whose AREA is one of: Outer Sunset, Inner Sunset, Outer Richmond, Ocean Beach, Sunset Dunes, Noriega Sunset Lounge. Discard every other area (Tenderloin, SoMa, Mission, Parkside, Golden Gate Park, Inner Richmond, etc.). Title format: "<EVENT> — <ORGANIZATION>" (skip the dash if the org name is already in the event name). Use the AREA as the location, event_type "volunteer", and a short description naming the organization.',
       'Green Apple Books on the Park':
         'Green Apple lists author events for several stores. ONLY keep events whose entry is prefixed "9th Ave:" (Books on the Park, 1231 9th Ave, Inner Sunset) or "Clement:" (Outer Richmond). SKIP anything marked "Offsite:" or "SOLD OUT". Entries look like "Sep 28 9th Ave: Diana Kapp with Heather Knight" with the time given in the description ("at 7pm"). Strip the "9th Ave:" / "Clement:" prefix from the title. Location is "Green Apple Books on the Park, 1231 9th Ave" for 9th Ave events and "Green Apple Books, 506 Clement St" for Clement events. event_type is "art".',
     };
-    const hint = sourceHints[sourceName] || '';
+    const hint = sourceHints[sourceName.replace(/ \(search\)$/, '')] || '';
 
     const prompt = `You are extracting EVENTS from web content for the Outer Sunset, Outer Richmond, and Inner Sunset neighborhoods of San Francisco.
 
@@ -666,6 +666,7 @@ function parseIcalFeed(
             description: cur.DESCRIPTION ? unescapeIcalText(cur.DESCRIPTION).slice(0, 500) : undefined,
             event_type: source.defaultEventType || 'community',
             source_url: cur.URL ? unescapeIcalText(cur.URL) : (source.listUrl || undefined),
+            verified_calendar_times: true,
           });
         }
       }
@@ -732,9 +733,12 @@ async function fetchIcalSource(
     }));
 
     const all: any[] = [];
-    for (const ics of fetched) {
+    for (const [index, ics] of fetched.entries()) {
       if (ics && ics.includes('BEGIN:VEVENT')) {
-        all.push(...parseIcalFeed(ics, source));
+        const eventPath = uniquePaths[index];
+        if (!eventPath) continue;
+        const eventUrl = source.origin + eventPath.replace(/\?format=ical$/, '');
+        all.push(...parseIcalFeed(ics, source).map((event) => ({ ...event, source_url: eventUrl })));
       }
     }
 

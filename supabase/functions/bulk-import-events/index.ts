@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isLikelyDuplicate, backfillFields, venueKey } from "../_shared/event-identity.ts";
+import { isLikelyDuplicate, backfillFields, normalizeEventIdentity, verifiedTimeUpdates } from "../_shared/event-identity.ts";
 
 
 const corsHeaders = {
@@ -16,6 +16,8 @@ interface EventInput {
   end_time?: string;
   description?: string;
   event_type: string;
+  source_url?: string;
+  verified_calendar_times?: boolean;
 }
 
 interface MenuInput {
@@ -104,7 +106,8 @@ serve(async (req) => {
     };
 
     // Process events
-    for (const event of events) {
+    for (const rawEvent of events) {
+      const event = normalizeEventIdentity(rawEvent);
       try {
         // Validate required fields
         if (!event.title || !event.location || !event.event_date || !event.start_time || !event.event_type) {
@@ -115,32 +118,39 @@ serve(async (req) => {
 
         // Normalize location name
         const normalizedLocation = normalizeLocation(event.location);
+        const offset = pacificOffset(event.event_date);
+        const startTime = `${event.event_date}T${event.start_time}:00${offset}`;
+        const endTime = event.end_time ? `${event.event_date}T${event.end_time}:00${offset}` : null;
 
         // Fuzzy duplicate check: same date + same canonical venue + close start
         // time + strongly overlapping title. Exact string matching missed
         // wording/venue drift between sources.
-        const { data: sameDay } = await supabase
+        const { data: sameDay, error: lookupError } = await supabase
           .from('events')
           .select('id, title, location, event_date, start_time, end_time, description, source_url')
           .eq('event_date', event.event_date)
           .eq('archived', false);
+        if (lookupError) throw lookupError;
 
         const candidate = {
           title: event.title,
           location: normalizedLocation,
           event_date: event.event_date,
           start_time: event.start_time,
+          source_url: event.source_url,
+          verified_calendar_times: event.verified_calendar_times,
         };
         const existing = (sameDay || []).find((row) =>
-          venueKey(row.location) === venueKey(normalizedLocation) && isLikelyDuplicate(row, candidate)
+          isLikelyDuplicate(row, candidate)
         );
 
         if (existing) {
           // Keep the existing row, but fill in anything it's missing.
-          const patch = backfillFields(existing, {
+          const patch = { ...backfillFields(existing, {
+            ...candidate,
             source_url: event.source_url || null,
             description: event.description || null,
-          });
+          }), ...verifiedTimeUpdates(existing, { ...candidate, start_time: startTime, end_time: endTime }) };
           if (Object.keys(patch).length > 0) {
             await supabase.from('events').update(patch).eq('id', existing.id);
           }
@@ -153,9 +163,6 @@ serve(async (req) => {
 
         // Parse times and create timestamps
         const eventDate = event.event_date;
-        const offset = pacificOffset(eventDate);
-        const startTime = `${eventDate}T${event.start_time}:00${offset}`;
-        const endTime = event.end_time ? `${eventDate}T${event.end_time}:00${offset}` : null;
 
         // Insert event with auto-approved status
         const { data: inserted, error: insertError } = await supabase
