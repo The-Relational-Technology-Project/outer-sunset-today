@@ -1,3 +1,4 @@
 - [ ] Consolidate today's duplicate Outer Sunset farmers market listings.
+- [ ] Include the Día de los Muertos market celebration in one combined listing today.
 - [ ] Correct shared event identity across all ingestion paths and test regressions.
 - [ ] Deploy the correction and verify the public calendar.
