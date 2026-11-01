@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isLikelyDuplicate, backfillFields, venueKey } from "../_shared/event-identity.ts";
+import { isLikelyDuplicate, backfillFields, normalizeEventIdentity } from "../_shared/event-identity.ts";
 
 
 const corsHeaders = {
@@ -16,6 +16,7 @@ interface EventInput {
   end_time?: string;
   description?: string;
   event_type: string;
+  source_url?: string;
 }
 
 interface MenuInput {
@@ -104,7 +105,8 @@ serve(async (req) => {
     };
 
     // Process events
-    for (const event of events) {
+    for (const rawEvent of events) {
+      const event = normalizeEventIdentity(rawEvent);
       try {
         // Validate required fields
         if (!event.title || !event.location || !event.event_date || !event.start_time || !event.event_type) {
@@ -119,25 +121,28 @@ serve(async (req) => {
         // Fuzzy duplicate check: same date + same canonical venue + close start
         // time + strongly overlapping title. Exact string matching missed
         // wording/venue drift between sources.
-        const { data: sameDay } = await supabase
+        const { data: sameDay, error: lookupError } = await supabase
           .from('events')
           .select('id, title, location, event_date, start_time, end_time, description, source_url')
           .eq('event_date', event.event_date)
           .eq('archived', false);
+        if (lookupError) throw lookupError;
 
         const candidate = {
           title: event.title,
           location: normalizedLocation,
           event_date: event.event_date,
           start_time: event.start_time,
+          source_url: event.source_url,
         };
         const existing = (sameDay || []).find((row) =>
-          venueKey(row.location) === venueKey(normalizedLocation) && isLikelyDuplicate(row, candidate)
+          isLikelyDuplicate(row, candidate)
         );
 
         if (existing) {
           // Keep the existing row, but fill in anything it's missing.
           const patch = backfillFields(existing, {
+            ...candidate,
             source_url: event.source_url || null,
             description: event.description || null,
           });

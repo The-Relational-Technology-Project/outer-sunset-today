@@ -4,7 +4,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isLikelyDuplicate, backfillFields, venueKey } from "../_shared/event-identity.ts";
+import { isLikelyDuplicate, backfillFields, normalizeEventIdentity } from "../_shared/event-identity.ts";
 
 
 const corsHeaders = {
@@ -19,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, location, event_date, start_time, description, event_type, submitter_email, source_url } = await req.json();
+    const { title, location, event_date, start_time, description, event_type, submitter_email, source_url } = normalizeEventIdentity(await req.json());
     console.log("submit-event payload:", { title, location, event_date, start_time, event_type });
 
     // Basic server-side validation
@@ -48,19 +48,20 @@ serve(async (req) => {
 
     // If this event is already on the calendar, don't create a second copy.
 
-    const { data: sameDay } = await supabase
+    const { data: sameDay, error: lookupError } = await supabase
       .from("events")
       .select("id, title, location, event_date, start_time, end_time, description, source_url")
       .eq("event_date", event_date)
       .eq("archived", false);
+    if (lookupError) throw lookupError;
 
-    const candidate = { title, location, event_date, start_time };
+    const candidate = { title, location, event_date, start_time, source_url };
     const alreadyListed = (sameDay || []).find((row) =>
-      venueKey(row.location) === venueKey(location) && isLikelyDuplicate(row, candidate)
+      isLikelyDuplicate(row, candidate)
     );
 
     if (alreadyListed) {
-      const patch = backfillFields(alreadyListed, { source_url: source_url ?? null, description: description ?? null });
+      const patch = backfillFields(alreadyListed, { ...candidate, source_url: source_url ?? null, description: description ?? null });
       if (Object.keys(patch).length > 0) {
         await supabase.from("events").update(patch).eq("id", alreadyListed.id);
       }
