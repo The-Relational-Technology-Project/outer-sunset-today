@@ -99,11 +99,14 @@ export interface ComparableEvent {
   source_url?: string | null;
 }
 
-/** Only the regular market listing: never relabel a workshop or celebration. */
+/** Recognize the regular market and its named celebration, not separate activities. */
 export function normalizeEventIdentity<T extends ComparableEvent>(event: T): T {
   const title = event.title.toLowerCase().replace(/['’™®]/g, '').replace(/\s+/g, ' ').trim();
   const regularMarket = /^(?:outer )?sunset farmers? market(?:\s*(?:&|and)\s*mercantile)?$/.test(title);
+  const marketCelebration = /d[ií]a de los muertos/.test(title) &&
+    /sunset|market/.test(title) && !/workshop|activity|class|spoon|calavera/.test(title);
   const knownLocation = venueKey(event.location) === 'outer sunset farmers market';
+  const celebrationLocation = marketCelebration && /^sunset mercantile$/i.test(event.location.trim());
   let knownSource = false;
   try {
     const url = new URL(event.source_url || '');
@@ -112,10 +115,12 @@ export function normalizeEventIdentity<T extends ComparableEvent>(event: T): T {
       (host === 'sunsetboard.org' && url.pathname === '/listing/outer-sunset-farmers-market/') ||
       (host === 'sfsccd.org' && /^\/en\/other-sunset-community-events\/sunset-farmer-market-/.test(url.pathname));
   } catch { /* A missing source is not evidence of event identity. */ }
-  if (!regularMarket || (!knownLocation && !knownSource)) return event;
+  if ((!regularMarket && !marketCelebration) || (!knownLocation && !knownSource && !celebrationLocation)) return event;
   return {
     ...event,
-    title: 'Outer Sunset Farmers Market & Mercantile',
+    title: marketCelebration
+      ? 'Outer Sunset Farmers Market & Mercantile — Día de los Muertos'
+      : 'Outer Sunset Farmers Market & Mercantile',
     location: 'Outer Sunset Farmers Market, 37th Avenue between Ortega and Quintara',
   };
 }
@@ -156,6 +161,10 @@ export function isLikelyDuplicate(a: ComparableEvent, b: ComparableEvent): boole
   const bMin = minutesOfDay(b.start_time);
   if (aMin !== null && bMin !== null && Math.abs(aMin - bMin) > TIME_WINDOW_MINUTES) return false;
 
+  // A market's named celebration replaces its routine listing for that day.
+  const marketTitle = /^Outer Sunset Farmers Market & Mercantile(?: — Día de los Muertos)?$/;
+  if (venueKey(a.location) === 'outer sunset farmers market' && marketTitle.test(a.title) && marketTitle.test(b.title)) return true;
+
   const exact = normalizeTitle(a.title, a.location) === normalizeTitle(b.title, b.location);
   if (exact) return true;
 
@@ -168,6 +177,16 @@ export function backfillFields(
   incoming: Record<string, unknown>,
 ): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
+  if (typeof existing.title === 'string' && typeof existing.location === 'string' && typeof existing.event_date === 'string' &&
+      typeof incoming.title === 'string' && typeof incoming.location === 'string' && typeof incoming.event_date === 'string') {
+    const current = normalizeEventIdentity(existing as unknown as ComparableEvent);
+    const next = normalizeEventIdentity(incoming as unknown as ComparableEvent);
+    if (isLikelyDuplicate(current, next) && next.title === 'Outer Sunset Farmers Market & Mercantile — Día de los Muertos' && current.title !== next.title) {
+      patch.title = next.title;
+      patch.location = next.location;
+      if (incoming.description) patch.description = incoming.description;
+    }
+  }
   for (const field of ['source_url', 'description', 'end_time']) {
     const current = existing[field];
     const next = incoming[field];
