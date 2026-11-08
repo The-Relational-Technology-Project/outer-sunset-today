@@ -4,3 +4,5 @@
 - [x] Deploy the correction and verify the public calendar.
 - [x] Consolidate Sunset Dunes cleanup duplicates and prevent recurrence.
 - [x] Verify and correct the SF Philharmonic start time at its source.
+- [ ] Add public pizza, school lunch, and news feeds with Neighborhood API metadata.
+- [ ] Test anonymous access, filters, and live data; document shareable endpoint paths.
